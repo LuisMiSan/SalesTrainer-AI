@@ -23,3 +23,36 @@ export interface TrainingSession {
     date: string;
     scenarioId: number;
 }
+
+export interface Lead {
+    id: number;
+    name: string;
+    company: string;
+    position: string;
+    email: string;
+    phone: string;
+    status: 'Nuevo' | 'Contactado' | 'Reunión' | 'Propuesta' | 'Ganado' | 'Perdido';
+    priority: 'Alta' | 'Media' | 'Baja';
+    value: number;
+    nextFollowUp?: string;
+}
+
+export interface Meeting {
+    id: number;
+    title: string;
+    leadId: number;
+    leadName: string;
+    date: string;
+    time: string;
+    type: 'Llamada' | 'Videollamada' | 'Presencial';
+    status: 'Programada' | 'Completada' | 'Cancelada';
+}
+
+export interface Pitch {
+    id: number;
+    title: string;
+    content: string;
+    url?: string;
+    isFavorite: boolean;
+    date: string;
+}

@@ -1,5 +1,5 @@
 {
-  "name": "SalesTrainer AI",
+  "name": "PerfectCall AI",
   "description": "Plataforma de entrenamiento para comerciales. Practica tus llamadas con IA, supera escenarios difíciles y recibe feedback instantáneo antes de hablar con clientes reales.",
   "requestFramePermissions": [
     "microphone"
