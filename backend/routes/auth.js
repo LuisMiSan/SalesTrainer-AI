@@ -165,7 +165,15 @@ router.put('/profile', authMiddleware, async (req, res) => {
     if (company) user.company = company;
     if (avatar) user.avatar = avatar;
     if (preferences) {
-      user.preferences = { ...user.preferences, ...preferences };
+      // Deep merge for preferences
+      user.preferences = {
+        ...user.preferences,
+        ...preferences,
+        notifications: {
+          ...user.preferences.notifications,
+          ...(preferences.notifications || {})
+        }
+      };
     }
 
     await user.save();

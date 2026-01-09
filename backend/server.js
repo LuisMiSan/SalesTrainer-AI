@@ -12,6 +12,7 @@ const leadsRoutes = require('./routes/leads');
 const objectionsRoutes = require('./routes/objections');
 const meetingsRoutes = require('./routes/meetings');
 const practiceRoutes = require('./routes/practice');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 
@@ -46,7 +47,23 @@ app.use('/api/leads', leadsRoutes);
 app.use('/api/objections', objectionsRoutes);
 app.use('/api/meetings', meetingsRoutes);
 app.use('/api/practice', practiceRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
-  res.json
+  res.json({ status: 'ok', timestamp: new Date() });
+});
+
+// Manejo de errores global
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Error interno del servidor'
+  });
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+});

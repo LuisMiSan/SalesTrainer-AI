@@ -135,3 +135,116 @@ export const SkillsRadarChart: React.FC<RadarChartProps> = ({ scores }) => {
 
     return <canvas ref={canvasRef} />;
 };
+
+interface EvolutionChartProps {
+    labels: string[];
+    confidenceData: number[];
+    clarityData: number[];
+    empathyData: number[];
+}
+
+export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, confidenceData, clarityData, empathyData }) => {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const chartRef = useRef<Chart | null>(null);
+
+    useEffect(() => {
+        if (!canvasRef.current) return;
+
+        if (chartRef.current) {
+            chartRef.current.destroy();
+        }
+
+        const ctx = canvasRef.current.getContext('2d');
+        if (!ctx) return;
+
+        const config: ChartConfiguration = {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Confianza',
+                        data: confidenceData,
+                        borderColor: '#2C3E50', // Dark Blue (Screenshot match)
+                        backgroundColor: '#2C3E50',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Claridad',
+                        data: clarityData,
+                        borderColor: '#2ECC71', // Green (Screenshot match)
+                        backgroundColor: '#2ECC71',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Empatía',
+                        data: empathyData,
+                        borderColor: '#3498DB', // Light Blue (Screenshot match)
+                        backgroundColor: '#3498DB',
+                        borderWidth: 4,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { 
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        titleColor: '#101C22',
+                        bodyColor: '#617C89',
+                        borderColor: '#E2E8F0',
+                        borderWidth: 1,
+                        padding: 10,
+                        bodyFont: { size: 12, family: 'Manrope' },
+                        titleFont: { size: 13, family: 'Manrope', weight: 'bold' }
+                    }
+                },
+                scales: {
+                    y: { 
+                        display: false, 
+                        min: 40,
+                        max: 100 
+                    },
+                    x: { 
+                        grid: { display: false }, 
+                        border: { display: false },
+                        ticks: { display: false }
+                    }
+                },
+                interaction: {
+                    mode: 'nearest',
+                    axis: 'x',
+                    intersect: false
+                },
+                elements: {
+                    line: {
+                        capBezierPoints: true
+                    }
+                }
+            }
+        };
+
+        chartRef.current = new Chart(ctx, config);
+
+        return () => {
+            if (chartRef.current) {
+                chartRef.current.destroy();
+            }
+        };
+    }, [labels, confidenceData, clarityData, empathyData]);
+
+    return <canvas ref={canvasRef} />;
+};

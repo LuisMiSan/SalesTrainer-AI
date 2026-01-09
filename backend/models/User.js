@@ -59,7 +59,8 @@ const userSchema = new mongoose.Schema({
     },
     notifications: {
       email: { type: Boolean, default: true },
-      push: { type: Boolean, default: true }
+      push: { type: Boolean, default: true },
+      defaultReminderMinutes: { type: Number, default: 15 }
     }
   },
   stats: {

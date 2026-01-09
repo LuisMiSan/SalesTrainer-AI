@@ -29,6 +29,10 @@ const meetingSchema = new mongoose.Schema({
     type: Number, // en minutos
     default: 30
   },
+  reminderMinutes: {
+    type: Number,
+    default: 15 // Por defecto 15 minutos antes
+  },
   status: {
     type: String,
     enum: ['programada', 'completada', 'cancelada', 'reprogramada'],
@@ -38,6 +42,25 @@ const meetingSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  // New fields for Evolution & Clips features
+  analysis: {
+    score: { type: Number, min: 0, max: 100 },
+    confidence: { type: Number, min: 0, max: 100 },
+    clarity: { type: Number, min: 0, max: 100 },
+    empathy: { type: Number, min: 0, max: 100 },
+    pace: { type: Number, min: 0, max: 100 }
+  },
+  clips: [{
+    title: String,
+    startTime: Number, // segundos
+    endTime: Number, // segundos
+    type: {
+      type: String,
+      enum: ['strength', 'improvement', 'objection', 'closing', 'general'],
+      default: 'general'
+    },
+    url: String
+  }],
   nextActions: {
     type: String,
     default: ''

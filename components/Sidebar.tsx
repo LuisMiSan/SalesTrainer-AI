@@ -12,7 +12,7 @@ export const Sidebar: React.FC = () => {
         { id: 'web-analysis', icon: 'add_circle', label: 'Nuevo Pitch', path: '/web-analysis' },
         { id: 'objections', icon: 'list', label: 'Objeciones', path: '/objections' },
         { id: 'practice', icon: 'mic', label: 'Práctica', path: '/practice' },
-        { id: 'analysis', icon: 'emoji_events', label: 'Progreso', path: '/analysis' },
+        { id: 'analysis', icon: 'trending_up', label: 'Evolución', path: '/analysis' },
         { id: 'settings', icon: 'settings', label: 'Ajustes', path: '/settings' },
     ];
 
@@ -46,6 +46,21 @@ export const Sidebar: React.FC = () => {
                     );
                 })}
             </nav>
+            
+            {/* Admin Link (Separated) */}
+            <div className="px-4 pb-2">
+                 <button
+                    onClick={() => navigate('/admin')}
+                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl transition-colors font-medium text-sm ${
+                        location.pathname.startsWith('/admin')
+                            ? 'bg-purple-50 text-purple-700' 
+                            : 'text-subtle hover:bg-background'
+                    }`}
+                >
+                    <Icon name="admin_panel_settings" size={20} filled={location.pathname.startsWith('/admin')} />
+                    Admin Panel
+                </button>
+            </div>
 
             <div className="p-4 border-t border-gray-100">
                 <div className="flex items-center gap-3 px-4 py-2">

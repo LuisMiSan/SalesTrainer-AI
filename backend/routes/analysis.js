@@ -186,7 +186,8 @@ router.get('/pitches', authMiddleware, async (req, res) => {
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { 'analysis.companyName': { $regex: search, $options: 'i' } }
+        { 'analysis.companyName': { $regex: search, $options: 'i' } },
+        { originalUrl: { $regex: search, $options: 'i' } }
       ];
     }
 

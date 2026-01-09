@@ -22,6 +22,7 @@ const practiceSessionSchema = new mongoose.Schema({
   },
   audioUrl: String,
   transcription: String,
+  improvedTranscription: String,
   duration: Number, // en segundos
   analysis: {
     score: {
@@ -32,14 +33,23 @@ const practiceSessionSchema = new mongoose.Schema({
     clarity: Number,
     pace: Number,
     confidence: Number,
+    empathy: Number,
     engagement: Number,
     fillerWords: Number,
     keywordUsage: Number
   },
   feedback: {
     strengths: [String],
-    improvements: [String],
+    improvements: [{
+      title: String,
+      description: String,
+      icon: String
+    }],
     suggestions: [String]
+  },
+  clipDescriptions: {
+    user: String,
+    improved: String
   },
   metrics: {
     wordsPerMinute: Number,
@@ -81,7 +91,7 @@ router.post('/analyze', authMiddleware, async (req, res) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
+        max_tokens: 2000,
         messages: [{
           role: 'user',
           content: `Analiza esta práctica de pitch de ventas y proporciona feedback detallado.
@@ -95,27 +105,31 @@ Evalúa en escala 0-100:
 - Claridad: ¿Qué tan claro y comprensible es el mensaje?
 - Ritmo: ¿El ritmo es apropiado (ni muy rápido ni muy lento)?
 - Confianza: ¿Proyecta confianza y seguridad?
-- Engagement: ¿Es atractivo y mantiene el interés?
-- Uso de palabras de relleno: Contar "eh", "umm", "este", etc.
-- Uso de palabras clave: ¿Usa términos importantes del pitch?
+- Empatía: ¿Conecta emocionalmente y muestra comprensión?
 
 Proporciona:
 - 3 fortalezas específicas
-- 3 áreas de mejora
-- 3 sugerencias concretas
+- 3 áreas de mejora (con título, descripción breve y sugerencia de icono material design)
+- Una versión mejorada del texto que suene más profesional y persuasiva
+- Descripción breve (3-5 palabras) del tono del usuario (ej: "Ritmo rápido y vacilante")
+- Descripción breve del tono de la versión mejorada (ej: "Ritmo pausado y tono firme")
 
 Responde SOLO con JSON válido:
 {
   "score": 85,
-  "clarity": 90,
-  "pace": 80,
+  "clarity": 62,
+  "pace": 70,
   "confidence": 85,
-  "engagement": 88,
-  "fillerWords": 3,
-  "keywordUsage": 85,
-  "strengths": ["...", "...", "..."],
-  "improvements": ["...", "...", "..."],
-  "suggestions": ["...", "...", "..."]
+  "empathy": 91,
+  "improvements": [
+    {"title": "Aumentar la claridad", "description": "Usa frases más directas y pausas más cortas para proyectar mayor seguridad.", "icon": "campaign"},
+    {"title": "Modulación de voz", "description": "Varía tu entonación para generar más interés y conectar mejor con el cliente.", "icon": "volume_up"}
+  ],
+  "improved_version": "Texto mejorado...",
+  "clip_descriptions": {
+    "user": "Ritmo rápido y vacilante",
+    "improved": "Ritmo pausado y tono firme"
+  }
 }`
         }]
       })
@@ -132,21 +146,24 @@ Responde SOLO con JSON válido:
       pitchId,
       type: type || 'pitch',
       transcription,
+      improvedTranscription: analysis.improved_version,
       duration: 60, // Esto debería calcularse del audio
       analysis: {
         score: analysis.score,
         clarity: analysis.clarity,
         pace: analysis.pace,
         confidence: analysis.confidence,
-        engagement: analysis.engagement,
-        fillerWords: analysis.fillerWords,
-        keywordUsage: analysis.keywordUsage
+        empathy: analysis.empathy,
+        engagement: analysis.empathy, // Fallback
+        fillerWords: 0,
+        keywordUsage: 80
       },
       feedback: {
-        strengths: analysis.strengths,
+        strengths: [],
         improvements: analysis.improvements,
-        suggestions: analysis.suggestions
+        suggestions: []
       },
+      clipDescriptions: analysis.clip_descriptions,
       metrics: {
         wordsPerMinute: Math.round(transcription.split(' ').length / (60 / 60)),
         pauseCount: 0,
@@ -173,8 +190,10 @@ Responde SOLO con JSON válido:
       session: {
         id: session._id,
         transcription: session.transcription,
+        improvedTranscription: session.improvedTranscription,
         analysis: session.analysis,
         feedback: session.feedback,
+        clipDescriptions: session.clipDescriptions,
         metrics: session.metrics,
         createdAt: session.createdAt
       }

@@ -37,6 +37,22 @@ export interface Lead {
     nextFollowUp?: string;
 }
 
+export interface Clip {
+    id: string;
+    title: string;
+    type: 'strength' | 'improvement' | 'objection' | 'closing' | 'general';
+    startTime?: number;
+    endTime?: number;
+}
+
+export interface MeetingAnalysis {
+    confidence: number;
+    clarity: number;
+    empathy: number;
+    pace?: number;
+    score?: number;
+}
+
 export interface Meeting {
     id: number;
     title: string;
@@ -46,6 +62,9 @@ export interface Meeting {
     time: string;
     type: 'Llamada' | 'Videollamada' | 'Presencial';
     status: 'Programada' | 'Completada' | 'Cancelada';
+    reminderMinutes?: number;
+    analysis?: MeetingAnalysis;
+    clips?: Clip[];
 }
 
 export interface Pitch {

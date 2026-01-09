@@ -3,6 +3,134 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const Meeting = require('../models/Meeting');
 const Lead = require('../models/Lead');
+const User = require('../models/User');
+
+// GET /api/meetings/evolution - Obtener historial de llamadas (gráficos y clips)
+router.get('/evolution', authMiddleware, async (req, res) => {
+  try {
+    const { limit = 20, search, filter } = req.query;
+
+    const query = {
+        userId: req.userId,
+        status: 'completada',
+        'analysis.score': { $exists: true }
+    };
+
+    // Filtros
+    if (search) {
+        query.title = { $regex: search, $options: 'i' };
+    }
+
+    if (filter === 'closed') {
+        query.outcome = { $in: ['exitoso', 'negativo'] }; // Asumiendo cerrado = resultado final
+    } else if (filter === 'pending') {
+        query.outcome = { $in: ['pendiente', 'neutral'] };
+    }
+
+    // Buscar reuniones
+    const meetings = await Meeting.find(query)
+    .sort({ scheduledDate: -1 })
+    .limit(parseInt(limit))
+    .select('title scheduledDate analysis clips outcome notes nextActions leadStatusAfter');
+
+    // Preparar datos para el gráfico (orden cronológico ascendente)
+    // Nota: El gráfico global se eliminó del frontend principal, pero mantenemos la lógica por si se usa en reportes
+    const chartData = [...meetings].reverse().map(m => ({
+      date: m.scheduledDate,
+      label: new Date(m.scheduledDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+      confidence: m.analysis.confidence || 0,
+      clarity: m.analysis.clarity || 0,
+      empathy: m.analysis.empathy || 0
+    }));
+
+    // Formatear historial
+    const history = meetings.map(m => ({
+      id: m._id,
+      title: m.title,
+      date: new Date(m.scheduledDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
+      status: (m.outcome === 'exitoso' || m.outcome === 'negativo') ? 'closed' : 'pending',
+      scores: {
+        confidence: m.analysis.confidence || 0,
+        clarity: m.analysis.clarity || 0,
+        empathy: m.analysis.empathy || 0
+      },
+      hasChart: true, // Flag para mostrar gráfico individual
+      clips: m.clips || [],
+      notes: m.notes,
+      nextActions: m.nextActions,
+      leadStatusAfter: m.leadStatusAfter
+    }));
+
+    res.json({
+      success: true,
+      chart: {
+        labels: chartData.map(d => d.label),
+        datasets: {
+          confidence: chartData.map(d => d.confidence),
+          clarity: chartData.map(d => d.clarity),
+          empathy: chartData.map(d => d.empathy)
+        }
+      },
+      history
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo historial:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener historial',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/meetings/:id/clips/:clipId - Obtener acceso a un clip específico
+router.get('/:id/clips/:clipId', authMiddleware, async (req, res) => {
+  try {
+    const { id, clipId } = req.params;
+
+    const meeting = await Meeting.findOne({
+      _id: id,
+      userId: req.userId
+    });
+
+    if (!meeting) {
+      return res.status(404).json({
+        success: false,
+        message: 'Reunión no encontrada'
+      });
+    }
+
+    const clip = meeting.clips.id(clipId);
+    if (!clip) {
+      return res.status(404).json({
+        success: false,
+        message: 'Clip no encontrado'
+      });
+    }
+
+    // En un caso real, aquí se generaría una URL firmada de S3/GCS
+    // Por ahora, devolvemos la URL almacenada o una simulada
+    const secureUrl = clip.url || `https://api.perfectcall.ai/stream/${clipId}`;
+
+    res.json({
+      success: true,
+      clip: {
+        ...clip.toObject(),
+        url: secureUrl,
+        expiresAt: new Date(Date.now() + 3600000) // 1 hora
+      }
+    });
+
+  } catch (error) {
+    console.error('Error obteniendo clip:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener clip',
+      error: error.message
+    });
+  }
+});
 
 // POST /api/meetings - Crear nueva reunión
 router.post('/', authMiddleware, async (req, res) => {
@@ -14,7 +142,8 @@ router.post('/', authMiddleware, async (req, res) => {
       scheduledDate,
       duration,
       notes,
-      attendees
+      attendees,
+      reminderMinutes
     } = req.body;
 
     if (!leadId || !title || !scheduledDate) {
@@ -37,6 +166,13 @@ router.post('/', authMiddleware, async (req, res) => {
       });
     }
 
+    // Obtener preferencia por defecto del usuario si no se especifica
+    let finalReminder = reminderMinutes;
+    if (finalReminder === undefined) {
+      const user = await User.findById(req.userId);
+      finalReminder = user.preferences?.notifications?.defaultReminderMinutes || 15;
+    }
+
     const meeting = new Meeting({
       userId: req.userId,
       leadId,
@@ -46,7 +182,8 @@ router.post('/', authMiddleware, async (req, res) => {
       duration: duration || 30,
       notes: notes || '',
       attendees: attendees || [],
-      status: 'programada'
+      status: 'programada',
+      reminderMinutes: finalReminder
     });
 
     await meeting.save();
@@ -214,7 +351,8 @@ router.put('/:id', authMiddleware, async (req, res) => {
     const allowedFields = [
       'title', 'type', 'scheduledDate', 'duration', 'status',
       'notes', 'nextActions', 'outcome', 'leadStatusAfter',
-      'attendees', 'keyPoints', 'objections', 'followUpDate'
+      'attendees', 'keyPoints', 'objections', 'followUpDate',
+      'reminderMinutes', 'analysis', 'clips'
     ];
 
     allowedFields.forEach(field => {
@@ -283,7 +421,7 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 // POST /api/meetings/:id/complete - Completar reunión
 router.post('/:id/complete', authMiddleware, async (req, res) => {
   try {
-    const { notes, nextActions, outcome, leadStatusAfter, followUpDate } = req.body;
+    const { notes, nextActions, outcome, leadStatusAfter, followUpDate, analysis, clips } = req.body;
 
     const meeting = await Meeting.findOne({
       _id: req.params.id,
@@ -303,6 +441,10 @@ router.post('/:id/complete', authMiddleware, async (req, res) => {
     meeting.outcome = outcome || 'neutral';
     meeting.leadStatusAfter = leadStatusAfter || null;
     meeting.followUpDate = followUpDate || null;
+    
+    // Guardar análisis y clips si se envían
+    if (analysis) meeting.analysis = analysis;
+    if (clips) meeting.clips = clips;
 
     await meeting.save();
 

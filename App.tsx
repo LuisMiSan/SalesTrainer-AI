@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { HashRouter, Routes, Route, useNavigate, Link } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, Link, useParams } from 'react-router-dom';
 import { BottomNav } from './components/BottomNav';
 import { Sidebar } from './components/Sidebar';
 import { Icon } from './components/Icon';
-import { WeeklyBarChart, SkillsRadarChart } from './components/Charts';
+import { WeeklyBarChart, SkillsRadarChart, EvolutionLineChart } from './components/Charts';
 import { Scenario, Objection, Lead, Meeting, Pitch } from './types';
 
 // --- MOCK DATA ---
@@ -30,10 +30,101 @@ const MOCK_LEADS: Lead[] = [
 ];
 
 const MOCK_MEETINGS: Meeting[] = [
-    { id: 1, title: 'Demo de Producto', leadId: 1, leadName: 'Ana Garcia', date: '2023-10-27', time: '10:00', type: 'Videollamada', status: 'Programada' },
-    { id: 2, title: 'Reunión Inicial', leadId: 2, leadName: 'Pedro Martinez', date: '2023-10-28', time: '16:30', type: 'Llamada', status: 'Programada' },
-    { id: 3, title: 'Revisión Contrato', leadId: 3, leadName: 'Lucia Lopez', date: '2023-10-30', time: '11:00', type: 'Presencial', status: 'Programada' },
+    { id: 1, title: 'Demo de Producto', leadId: 1, leadName: 'Ana Garcia', date: '2023-10-27', time: '10:00', type: 'Videollamada', status: 'Programada', reminderMinutes: 15 },
+    { id: 2, title: 'Reunión Inicial', leadId: 2, leadName: 'Pedro Martinez', date: '2023-10-28', time: '16:30', type: 'Llamada', status: 'Programada', reminderMinutes: 60 },
+    { id: 3, title: 'Revisión Contrato', leadId: 3, leadName: 'Lucia Lopez', date: '2023-10-30', time: '11:00', type: 'Presencial', status: 'Programada', reminderMinutes: 30 },
 ];
+
+const HISTORY_DATA = [
+    {
+        id: 1,
+        title: "Reunión con Inversiones Globales",
+        date: "15 de mayo de 2024",
+        status: "closed",
+        scores: { confidence: 85, clarity: 92, empathy: 78 },
+        hasChart: true,
+        clips: [
+            { id: 'c1', title: 'Clip 1', type: 'strength', duration: '0:45' },
+            { id: 'c2', title: 'Clip 2', type: 'objection', duration: '1:20' }
+        ],
+        // Added result fields
+        notes: "Cliente interesado en la integración API. Presupuesto aprobado para Q3.",
+        nextActions: "Enviar documentación técnica y propuesta económica revisada.",
+        leadStatusAfter: "propuesta"
+    },
+    {
+        id: 2,
+        title: "Presentación a Soluciones SaaS",
+        date: "10 de mayo de 2024",
+        status: "closed",
+        scores: { confidence: 80, clarity: 88, empathy: 75 },
+        hasChart: false,
+        clips: [],
+        notes: "Reunión positiva. Tienen dudas sobre la seguridad.",
+        nextActions: "Agendar reunión con el CISO.",
+        leadStatusAfter: "reunión"
+    },
+    {
+        id: 3,
+        title: "Seguimiento con Tecnologías Apex",
+        date: "5 de mayo de 2024",
+        status: "pending",
+        scores: { confidence: 75, clarity: 85, empathy: 70 },
+        hasChart: false,
+        clips: [
+            { id: 'c3', title: 'Clip 1', type: 'closing', duration: '0:30' }
+        ]
+    }
+];
+
+// Updated Mock data for Web Analysis History to match screenshot icons and colors
+const PITCH_HISTORY_DATA = [
+    { id: 1, url: "www.example.com", date: "15 de Enero, 2024", icon: "check_box", color: "bg-emerald-500 text-white" },
+    { id: 2, url: "www.another-example.com", date: "10 de Enero, 2024", icon: "diamond", color: "bg-gray-100 text-teal-600" },
+    { id: 3, url: "www.sales-pitch.com", date: "05 de Enero, 2024", icon: "mail", color: "bg-teal-700 text-white" },
+    { id: 4, url: "www.ai-powered-sales.com", date: "20 de Diciembre, 2023", icon: "verified", color: "bg-emerald-300 text-emerald-800" },
+    { id: 5, url: "www.lead-generation.com", date: "15 de Diciembre, 2023", icon: "expand_more", color: "bg-gray-100 text-gray-600" },
+];
+
+const CHART_DATA = {
+    labels: ['1', '2', '3', '4', '5', '6', '7'],
+    confidence: [25, 40, 70, 55, 65, 85, 95],
+    clarity: [35, 30, 60, 45, 75, 78, 88],
+    empathy: [30, 50, 55, 40, 68, 72, 82]
+};
+
+// --- COMPONENTS ---
+
+const ClipPlayerModal = ({ clip, onClose }: { clip: any, onClose: () => void }) => {
+    if (!clip) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
+            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all scale-100">
+                <div className="bg-secondary text-white p-4 flex justify-between items-center">
+                    <h3 className="font-bold">{clip.title}</h3>
+                    <button onClick={onClose}><Icon name="close" className="text-white/80 hover:text-white" /></button>
+                </div>
+                <div className="p-8 flex flex-col items-center justify-center bg-gray-900 aspect-video">
+                    {/* Fake Player UI */}
+                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-4 cursor-pointer hover:scale-110 transition-transform">
+                        <Icon name="play_arrow" size={32} className="text-white" />
+                    </div>
+                    <div className="w-full bg-gray-700 h-1 rounded-full mt-4 overflow-hidden">
+                        <div className="bg-primary w-1/3 h-full"></div>
+                    </div>
+                    <div className="flex justify-between w-full text-xs text-gray-400 mt-2">
+                        <span>0:15</span>
+                        <span>{clip.duration || '1:00'}</span>
+                    </div>
+                </div>
+                <div className="p-4 bg-surface">
+                    <p className="text-sm text-subtle">Este clip muestra un momento clave de la conversación analizado por la IA.</p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // --- PAGES ---
 
@@ -104,8 +195,8 @@ const Dashboard = () => {
                 </div>
                 <div onClick={() => navigate('/analysis')} className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-2">
-                        <div className="p-2 bg-green-100 rounded-lg"><Icon name="emoji_events" className="text-green-500" size={20}/></div>
-                        <span className="text-xs text-subtle">Score</span>
+                        <div className="p-2 bg-green-100 rounded-lg"><Icon name="trending_up" className="text-green-500" size={20}/></div>
+                        <span className="text-xs text-subtle">Evolución</span>
                     </div>
                     <p className="text-2xl font-bold text-text">8.5</p>
                     <p className="text-xs text-subtle">Promedio</p>
@@ -180,444 +271,472 @@ const Dashboard = () => {
     );
 };
 
-const LeadsPage = () => {
-    const [filter, setFilter] = useState('');
-    const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+const CallHistoryPage = ({ isUserView = false, userName = '' }) => {
+    const [selectedClip, setSelectedClip] = useState<any>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState<'all' | 'closed' | 'pending'>('all');
 
-    const filteredLeads = leads.filter(l => 
-        l.name.toLowerCase().includes(filter.toLowerCase()) || 
-        l.company.toLowerCase().includes(filter.toLowerCase())
-    );
+    // Filter logic
+    const filteredHistory = HISTORY_DATA.filter(item => {
+        const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesFilter = activeFilter === 'all' || item.status === activeFilter;
+        return matchesSearch && matchesFilter;
+    });
 
     return (
-        <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
-                <div className="flex justify-between items-center mb-4 max-w-7xl mx-auto w-full">
-                    <h1 className="text-2xl font-bold">Leads</h1>
-                    <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary/90">
-                        <Icon name="add" size={20} /> <span className="hidden sm:inline">Nuevo Lead</span>
-                    </button>
+         <div className="flex flex-col h-full bg-background relative">
+            <header className="bg-surface p-4 border-b border-gray-100 sticky top-0 z-10">
+                <div className="flex items-center mb-4">
+                    <button onClick={() => window.history.back()} className="mr-3 text-subtle hover:text-primary"><Icon name="arrow_back" /></button>
+                    <h1 className="text-xl font-bold flex-1 text-center md:text-left">
+                        {isUserView ? `Historial de ${userName}` : 'Historial de Llamadas'}
+                    </h1>
                 </div>
-                <div className="relative max-w-7xl mx-auto w-full">
-                    <Icon name="search" className="absolute left-3 top-2.5 text-gray-400" size={20} />
+
+                {/* Search Bar */}
+                <div className="relative mb-4">
+                    <Icon name="search" className="absolute left-3 top-3 text-gray-400" size={20} />
                     <input 
-                        type="text" 
-                        placeholder="Buscar por nombre o empresa..." 
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-background border-none focus:ring-2 focus:ring-primary"
+                        type="text"
+                        placeholder="Buscar por nombre o empresa"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full h-11 pl-10 pr-4 bg-background rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                     />
                 </div>
+
+                {/* Filters */}
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <button 
+                        onClick={() => setActiveFilter('all')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                            activeFilter === 'all' ? 'bg-primary text-white' : 'bg-gray-100 text-subtle hover:bg-gray-200'
+                        }`}
+                    >
+                        Todas
+                    </button>
+                    <button 
+                        onClick={() => setActiveFilter('closed')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                            activeFilter === 'closed' ? 'bg-primary text-white' : 'bg-gray-100 text-subtle hover:bg-gray-200'
+                        }`}
+                    >
+                        Cerradas
+                    </button>
+                    <button 
+                        onClick={() => setActiveFilter('pending')}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                            activeFilter === 'pending' ? 'bg-primary text-white' : 'bg-gray-100 text-subtle hover:bg-gray-200'
+                        }`}
+                    >
+                        Pendientes
+                    </button>
+                </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
-                    {filteredLeads.length > 0 ? filteredLeads.map(lead => (
-                        <div key={lead.id} className="bg-surface p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-                            <div className="flex justify-between items-start mb-2">
+            <div className="flex-1 overflow-y-auto p-4 pb-24 md:pb-8">
+                <div className="max-w-2xl mx-auto w-full space-y-4">
+                    {filteredHistory.map(item => (
+                        <div key={item.id} className="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100">
+                            {/* Card Header */}
+                            <div className="flex justify-between items-start mb-4 cursor-pointer">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mt-1 shrink-0">
+                                        <Icon name="call" size={20} filled={false} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-text text-base leading-tight mb-1">{item.title}</h3>
+                                        <p className="text-sm text-subtle">{item.date}</p>
+                                    </div>
+                                </div>
+                                <Icon name="chevron_right" className="text-gray-300 mt-2" size={20} />
+                            </div>
+
+                            {/* Results Summary (New addition for admin/history) */}
+                            {item.notes && (
+                                <div className="mb-4 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <Icon name="assignment" size={16} className="text-primary" />
+                                        <span className="text-xs font-bold text-primary uppercase">Resultados</span>
+                                    </div>
+                                    <p className="text-sm text-text mb-2 line-clamp-2">{item.notes}</p>
+                                    <div className="flex flex-wrap gap-2">
+                                         {item.leadStatusAfter && (
+                                            <span className="px-2 py-0.5 bg-white rounded border border-blue-100 text-xs text-primary font-medium">
+                                                Estado: {item.leadStatusAfter}
+                                            </span>
+                                         )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Scores (Text based) */}
+                            <div className="flex justify-between mb-4 px-2">
+                                <div className="text-center">
+                                    <p className="text-xs text-subtle mb-1">Confianza</p>
+                                    <p className="text-lg font-bold text-text">{item.scores.confidence}%</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xs text-subtle mb-1">Claridad</p>
+                                    <p className="text-lg font-bold text-text">{item.scores.clarity}%</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-xs text-subtle mb-1">Empatía</p>
+                                    <p className="text-lg font-bold text-text">{item.scores.empathy}%</p>
+                                </div>
+                            </div>
+
+                            {/* Embedded Chart (Only if item hasChart) */}
+                            {item.hasChart && (
+                                <div className="mb-4 bg-background/50 rounded-xl p-3">
+                                    <p className="text-sm font-bold text-text mb-2">Tendencia de Scores</p>
+                                    <div className="h-24 w-full">
+                                        <EvolutionLineChart 
+                                            labels={CHART_DATA.labels}
+                                            confidenceData={CHART_DATA.confidence}
+                                            clarityData={CHART_DATA.clarity}
+                                            empathyData={CHART_DATA.empathy}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Clips */}
+                            {item.clips.length > 0 && (
                                 <div>
-                                    <h3 className="font-bold text-text text-lg">{lead.name}</h3>
-                                    <p className="text-sm text-subtle">{lead.position} @ {lead.company}</p>
-                                </div>
-                                <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                                    lead.priority === 'Alta' ? 'bg-red-100 text-red-600' :
-                                    lead.priority === 'Media' ? 'bg-orange-100 text-orange-600' :
-                                    'bg-green-100 text-green-600'
-                                }`}>
-                                    {lead.priority}
-                                </span>
-                            </div>
-                            <div className="space-y-2 mt-4">
-                                <div className="flex items-center gap-2 text-sm text-subtle">
-                                    <Icon name="email" size={16}/> <span className="truncate">{lead.email}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-subtle">
-                                    <Icon name="phone" size={16}/> <span>{lead.phone}</span>
-                                </div>
-                            </div>
-                            <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
-                                <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold">{lead.status}</span>
-                                <span className="font-bold text-text">{lead.value.toLocaleString()}€</span>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="col-span-full text-center py-20">
-                            <Icon name="group_off" size={64} className="text-gray-300 mb-4 mx-auto" />
-                            <p className="text-subtle text-lg">No se encontraron leads</p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const MeetingsPage = () => {
-    const [tab, setTab] = useState<'upcoming' | 'all'>('upcoming');
-    
-    const filteredMeetings = tab === 'upcoming' 
-        ? MOCK_MEETINGS.filter(m => m.status === 'Programada') 
-        : MOCK_MEETINGS;
-
-    return (
-        <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto w-full">
-                    <div className="flex justify-between items-center mb-6">
-                        <h1 className="text-2xl font-bold">Reuniones</h1>
-                        <button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-primary/90">
-                            <Icon name="add" size={20} /> <span className="hidden sm:inline">Nueva</span>
-                        </button>
-                    </div>
-                    <div className="flex gap-6 border-b border-gray-100">
-                        <button 
-                            onClick={() => setTab('upcoming')}
-                            className={`pb-3 font-medium text-sm border-b-2 transition-colors px-1 ${tab === 'upcoming' ? 'border-primary text-primary' : 'border-transparent text-subtle hover:text-text'}`}
-                        >
-                            Próximas
-                        </button>
-                        <button 
-                            onClick={() => setTab('all')}
-                            className={`pb-3 font-medium text-sm border-b-2 transition-colors px-1 ${tab === 'all' ? 'border-primary text-primary' : 'border-transparent text-subtle hover:text-text'}`}
-                        >
-                            Todas
-                        </button>
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
-                    {filteredMeetings.map(meeting => (
-                        <div key={meeting.id} className="bg-surface p-5 rounded-xl shadow-sm border border-gray-100 flex gap-4 hover:shadow-md transition-shadow cursor-pointer">
-                            <div className="flex flex-col items-center justify-center bg-background rounded-xl w-16 h-16 shrink-0 border border-gray-100">
-                                <span className="text-xs font-bold text-red-500 uppercase">{new Date(meeting.date).toLocaleDateString('es-ES', { month: 'short' })}</span>
-                                <span className="text-xl font-bold text-text">{new Date(meeting.date).getDate()}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start mb-1">
-                                    <h3 className="font-bold text-text truncate pr-2">{meeting.title}</h3>
-                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${meeting.status === 'Programada' ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>{meeting.status}</span>
-                                </div>
-                                <p className="text-sm text-subtle mb-2">{meeting.leadName}</p>
-                                <div className="flex items-center gap-3 text-xs text-subtle">
-                                    <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><Icon name="schedule" size={14}/> {meeting.time}</span>
-                                    <span className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded"><Icon name="videocam" size={14}/> {meeting.type}</span>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const WebAnalysis = () => {
-    const [url, setUrl] = useState('');
-    const [isAnalyzing, setIsAnalyzing] = useState(false);
-    const [result, setResult] = useState<Pitch | null>(null);
-    const [pitches, setPitches] = useState<Pitch[]>([]);
-
-    useEffect(() => {
-        const saved = localStorage.getItem('saved_pitches');
-        if (saved) setPitches(JSON.parse(saved));
-    }, []);
-
-    const handleAnalyze = () => {
-        if (!url) return;
-        setIsAnalyzing(true);
-        setTimeout(() => {
-            setIsAnalyzing(false);
-            const newPitch: Pitch = {
-                id: Date.now(),
-                title: `Pitch para ${new URL(url).hostname}`,
-                content: "Hola [Nombre], he analizado su sitio web y veo que están enfocados en [Beneficio Detectado]. Nuestra solución podría ayudarles a potenciar eso mediante [Propuesta de Valor]. ¿Tienen 10 minutos esta semana?",
-                url: url,
-                isFavorite: false,
-                date: new Date().toLocaleDateString()
-            };
-            setResult(newPitch);
-        }, 2000);
-    };
-
-    const savePitch = () => {
-        if (result) {
-            const updated = [result, ...pitches];
-            setPitches(updated);
-            localStorage.setItem('saved_pitches', JSON.stringify(updated));
-            setResult(null);
-            setUrl('');
-        }
-    };
-
-    return (
-        <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
-                <div className="max-w-4xl mx-auto w-full flex items-center">
-                    <button onClick={() => window.history.back()} className="mr-3 md:hidden"><Icon name="arrow_back" /></button>
-                    <h1 className="text-2xl font-bold">Generador de Pitch</h1>
-                </div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-                <div className="max-w-4xl mx-auto w-full h-full flex flex-col">
-                    {!result ? (
-                        <>
-                            <div className="bg-surface p-8 rounded-2xl shadow-sm border border-gray-100 mb-8 text-center max-w-2xl mx-auto w-full">
-                                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                                    <Icon name="auto_awesome" className="text-primary" size={40} />
-                                </div>
-                                <h2 className="text-xl font-bold mb-2">Analizar Sitio Web</h2>
-                                <p className="text-subtle mb-8">Ingresa la URL de un cliente potencial y nuestra IA generará un pitch de ventas personalizado.</p>
-                                
-                                <div className="relative mb-4">
-                                    <input 
-                                        type="text" 
-                                        placeholder="https://ejemplo.com" 
-                                        value={url}
-                                        onChange={(e) => setUrl(e.target.value)}
-                                        className="w-full h-14 pl-6 pr-14 rounded-full border border-gray-200 focus:ring-2 focus:ring-primary shadow-sm"
-                                    />
-                                    <button 
-                                        onClick={handleAnalyze}
-                                        disabled={isAnalyzing}
-                                        className="absolute right-2 top-2 w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white shadow-md disabled:opacity-50 hover:bg-primary/90 transition-colors"
-                                    >
-                                        {isAnalyzing ? <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span> : <Icon name="arrow_forward" size={24} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {pitches.length > 0 && (
-                                <div className="max-w-2xl mx-auto w-full">
-                                    <h3 className="font-bold text-text mb-4 text-lg">Historial Reciente</h3>
-                                    <div className="space-y-3">
-                                        {pitches.map(p => (
-                                            <div key={p.id} onClick={() => setResult(p)} className="bg-surface p-4 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:border-primary/50 transition-colors flex justify-between items-center group">
-                                                <div>
-                                                    <h4 className="font-bold text-sm truncate">{p.title}</h4>
-                                                    <p className="text-xs text-subtle mt-1">{p.date}</p>
-                                                </div>
-                                                <div className="w-8 h-8 rounded-full bg-gray-50 group-hover:bg-primary/10 flex items-center justify-center text-gray-400 group-hover:text-primary transition-colors">
-                                                    <Icon name="chevron_right" size={20} />
-                                                </div>
-                                            </div>
+                                    <h4 className="text-sm font-bold text-text mb-2">Clips Destacados</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {item.clips.map(clip => (
+                                            <button 
+                                                key={clip.id} 
+                                                onClick={() => setSelectedClip(clip)}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-100"
+                                            >
+                                                <Icon name="play_circle" size={16} className="text-text" />
+                                                <span className="text-sm font-medium text-text">{clip.title}</span>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
                             )}
-                        </>
-                    ) : (
-                        <div className="bg-surface rounded-2xl p-6 md:p-8 shadow-sm border border-gray-100 flex-1 flex flex-col max-w-2xl mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-300">
-                            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100">
-                                <h3 className="font-bold text-xl text-text">Pitch Generado</h3>
-                                <button onClick={() => setResult(null)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-subtle"><Icon name="close" /></button>
-                            </div>
-                            <textarea 
-                                value={result.content}
-                                readOnly
-                                className="flex-1 w-full resize-none border-none focus:ring-0 text-text leading-relaxed text-base bg-transparent p-0"
-                            />
-                            <div className="flex gap-4 mt-6 pt-6 border-t border-gray-100">
-                                <button onClick={savePitch} className="flex-1 bg-secondary text-white py-3 rounded-xl font-bold hover:bg-secondary/90 transition-colors">Guardar</button>
-                                <button className="flex-1 bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary/90 transition-colors">Copiar al portapapeles</button>
-                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            {/* Play Modal */}
+            <ClipPlayerModal clip={selectedClip} onClose={() => setSelectedClip(null)} />
+        </div>
+    );
+}
+
+const WebHistoryPage = ({ isUserView = false, userName = '' }) => {
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredHistory = PITCH_HISTORY_DATA.filter(item => 
+        item.url.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+        <div className="flex flex-col h-full bg-background font-sans">
+             {/* Header */}
+            <div className="bg-surface px-6 pt-6 pb-2 sticky top-0 z-10 shadow-sm md:shadow-none">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex items-center gap-4">
+                        {isUserView ? (
+                            <button onClick={() => window.history.back()} className="text-text hover:bg-gray-100 rounded-full p-1"><Icon name="arrow_back" size={28}/></button>
+                        ) : (
+                            <button className="text-text hover:bg-gray-100 rounded-full p-1 md:hidden"><Icon name="menu" size={28} /></button>
+                        )}
+                        <div className="flex flex-col">
+                            <h1 className="text-xl font-bold text-text leading-none">Historial de URLs</h1>
+                            <h2 className="text-xl font-bold text-text leading-tight">Analizadas</h2>
+                        </div>
+                    </div>
+                    {!isUserView && (
+                        <div className="flex items-center gap-3">
+                            <button className="relative p-1 text-text hover:bg-gray-100 rounded-full">
+                                <Icon name="notifications" size={24} />
+                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+                            </button>
+                             <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" alt="Profile" className="w-9 h-9 rounded-full object-cover border border-gray-100" />
                         </div>
                     )}
                 </div>
+
+                <div className="space-y-3 pb-2">
+                    <div className="relative">
+                        <Icon name="search" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={20} />
+                        <input 
+                            type="text" 
+                            placeholder="Buscar URL..." 
+                            className="w-full h-12 pl-11 pr-4 rounded-full border border-gray-200 bg-white shadow-sm text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <button className="w-full h-12 bg-white rounded-full shadow-sm border border-gray-200 flex items-center justify-center gap-2 text-sm font-bold text-text hover:bg-gray-50 transition-colors">
+                        Filtros <Icon name="tune" size={18} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 md:pb-8 space-y-3">
+                {filteredHistory.map(item => (
+                     <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 transition-transform hover:scale-[1.01] cursor-pointer">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${item.color}`}>
+                            <Icon name={item.icon} size={24} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="font-bold text-text text-sm md:text-base truncate">{item.url}</h3>
+                            <p className="text-xs text-subtle">{item.date}</p>
+                        </div>
+                        <div className="text-emerald-500 shrink-0">
+                             <Icon name="check_circle" size={26} filled={false} className="text-emerald-500" />
+                        </div>
+                     </div>
+                ))}
             </div>
         </div>
     );
 };
 
-const Practice = () => {
-    const [state, setState] = useState<'setup' | 'active' | 'feedback'>('setup');
-    const [selectedPitch, setSelectedPitch] = useState<string>('');
-    const [duration, setDuration] = useState(0);
-    const timerRef = useRef<any>(null);
+const AdminPage = () => {
+    const [viewingUser, setViewingUser] = useState<{id: string, name: string, type: 'calls' | 'pitches'} | null>(null);
 
-    useEffect(() => {
-        if (state === 'active') {
-            timerRef.current = setInterval(() => setDuration(d => d + 1), 1000);
+    if (viewingUser) {
+        if (viewingUser.type === 'calls') {
+            return <CallHistoryPage isUserView={true} userName={viewingUser.name} />;
         } else {
-            clearInterval(timerRef.current);
-            if (state === 'setup') setDuration(0);
+            return <WebHistoryPage isUserView={true} userName={viewingUser.name} />;
         }
-        return () => clearInterval(timerRef.current);
-    }, [state]);
+    }
 
-    const formatTime = (s: number) => {
-        const mins = Math.floor(s / 60).toString().padStart(2, '0');
-        const secs = (s % 60).toString().padStart(2, '0');
-        return `${mins}:${secs}`;
+    return (
+        <div className="flex flex-col h-full bg-background">
+             <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
+                <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
+                    <h1 className="text-2xl font-bold">Panel de Administración</h1>
+                    <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">Admin</span>
+                </div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+                <div className="max-w-7xl mx-auto w-full space-y-6">
+                    
+                    {/* System Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 className="text-subtle text-sm font-medium mb-1">Total Usuarios</h3>
+                            <p className="text-3xl font-bold text-text">1,248</p>
+                            <span className="text-xs text-green-500 font-bold flex items-center mt-2"><Icon name="trending_up" size={16} /> +12% este mes</span>
+                        </div>
+                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 className="text-subtle text-sm font-medium mb-1">Sesiones de Práctica</h3>
+                            <p className="text-3xl font-bold text-text">8,542</p>
+                            <span className="text-xs text-green-500 font-bold flex items-center mt-2"><Icon name="trending_up" size={16} /> +5% este mes</span>
+                        </div>
+                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h3 className="text-subtle text-sm font-medium mb-1">Pitches Generados</h3>
+                            <p className="text-3xl font-bold text-text">3,102</p>
+                            <span className="text-xs text-text font-bold flex items-center mt-2">-- estable</span>
+                        </div>
+                    </div>
+
+                    {/* Users List */}
+                    <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-lg">Usuarios Recientes</h3>
+                            <button className="text-primary text-sm font-bold hover:underline">Ver todos</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 text-xs text-subtle uppercase">
+                                    <tr>
+                                        <th className="px-6 py-4 font-bold">Usuario</th>
+                                        <th className="px-6 py-4 font-bold">Rol</th>
+                                        <th className="px-6 py-4 font-bold">Plan</th>
+                                        <th className="px-6 py-4 font-bold">Estado</th>
+                                        <th className="px-6 py-4 font-bold text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 text-sm">
+                                    <tr className="hover:bg-gray-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-xs">AM</div>
+                                                <div>
+                                                    <p className="font-bold text-text">Ana Martinez</p>
+                                                    <p className="text-xs text-subtle">ana@empresa.com</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-text">SDR</td>
+                                        <td className="px-6 py-4"><span className="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">PRO</span></td>
+                                        <td className="px-6 py-4"><span className="flex items-center gap-1 text-green-600 font-bold text-xs"><div className="w-2 h-2 rounded-full bg-green-500"></div> Activo</span></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-3">
+                                                <button 
+                                                    onClick={() => setViewingUser({id: '1', name: 'Ana Martinez', type: 'calls'})}
+                                                    className="text-primary font-bold text-xs hover:underline"
+                                                >
+                                                    Ver Llamadas
+                                                </button>
+                                                <button 
+                                                    onClick={() => setViewingUser({id: '1', name: 'Ana Martinez', type: 'pitches'})}
+                                                    className="text-secondary font-bold text-xs hover:underline"
+                                                >
+                                                    Ver Pitches
+                                                </button>
+                                                <button className="text-subtle hover:text-primary"><Icon name="more_vert" size={20} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr className="hover:bg-gray-50 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-xs">CR</div>
+                                                <div>
+                                                    <p className="font-bold text-text">Carlos Ruiz</p>
+                                                    <p className="text-xs text-subtle">carlos@tech.com</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-text">Manager</td>
+                                        <td className="px-6 py-4"><span className="bg-purple-50 text-purple-700 px-2 py-1 rounded text-xs font-bold">ENTERPRISE</span></td>
+                                        <td className="px-6 py-4"><span className="flex items-center gap-1 text-green-600 font-bold text-xs"><div className="w-2 h-2 rounded-full bg-green-500"></div> Activo</span></td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-3">
+                                                <button 
+                                                    onClick={() => setViewingUser({id: '2', name: 'Carlos Ruiz', type: 'calls'})}
+                                                    className="text-primary font-bold text-xs hover:underline"
+                                                >
+                                                    Ver Llamadas
+                                                </button>
+                                                <button 
+                                                    onClick={() => setViewingUser({id: '2', name: 'Carlos Ruiz', type: 'pitches'})}
+                                                    className="text-secondary font-bold text-xs hover:underline"
+                                                >
+                                                    Ver Pitches
+                                                </button>
+                                                <button className="text-subtle hover:text-primary"><Icon name="more_vert" size={20} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW MEETING RESULTS PAGE ---
+
+const MeetingResultsPage = () => {
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const [notes, setNotes] = useState('');
+    const [nextActions, setNextActions] = useState('');
+    const [status, setStatus] = useState('contactado');
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsSaving(false);
+            navigate('/meetings');
+        }, 1000);
     };
 
-    if (state === 'setup') {
-        return (
-            <div className="flex flex-col h-full bg-background">
-                <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
-                    <h1 className="text-2xl font-bold text-center md:text-left md:max-w-7xl md:mx-auto">Modo Práctica</h1>
-                </header>
-                <div className="p-6 flex flex-col items-center justify-center flex-1 max-w-2xl mx-auto w-full">
-                    <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center mb-8">
-                        <Icon name="mic" className="text-primary" size={64} />
-                    </div>
-                    <h2 className="text-2xl font-bold mb-3 text-center">¿Qué quieres practicar hoy?</h2>
-                    <p className="text-subtle text-center text-base mb-10 max-w-md">Selecciona un pitch guardado o practica libremente para mejorar tu entonación y velocidad.</p>
-                    
-                    <select 
-                        className="w-full mb-6 p-4 rounded-xl border border-gray-200 bg-surface shadow-sm focus:ring-2 focus:ring-primary"
-                        value={selectedPitch}
-                        onChange={(e) => setSelectedPitch(e.target.value)}
-                    >
-                        <option value="">🎤 Práctica Libre (Sin guión)</option>
-                        <option value="pitch1">📄 Pitch para TechSolutions</option>
-                    </select>
-
-                    <button 
-                        onClick={() => setState('active')}
-                        className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-3 text-lg hover:bg-primary/90 transition-transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                        <Icon name="mic" /> Iniciar Grabación
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    if (state === 'active') {
-        return (
-            <div className="flex flex-col h-full bg-secondary text-white relative overflow-hidden">
-                <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
-                    <h2 className="text-6xl font-mono font-bold mb-8 tracking-wider">{formatTime(duration)}</h2>
-                    <div className="w-48 h-48 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse mb-12">
-                        <div className="w-32 h-32 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/50">
-                            <Icon name="mic" size={56} />
-                        </div>
-                    </div>
-                    <p className="opacity-70 mb-12 text-lg uppercase tracking-widest font-bold">Grabando...</p>
-                    <button 
-                        onClick={() => setState('feedback')}
-                        className="px-10 py-4 bg-white/10 backdrop-blur-md rounded-full font-bold border border-white/20 hover:bg-white/20 transition-all text-lg"
-                    >
-                        Detener Sesión
-                    </button>
-                </div>
-            </div>
-        );
-    }
+    const statusOptions = [
+        { value: 'contactado', label: 'En contacto' },
+        { value: 'reunión', label: 'Reunión programada' },
+        { value: 'propuesta', label: 'Propuesta enviada' },
+        { value: 'negociación', label: 'Negociación' },
+    ];
 
     return (
-        <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 border-b border-gray-100 text-center md:text-left">
-                <h1 className="text-xl font-bold md:max-w-7xl md:mx-auto">Resultados</h1>
+        <div className="flex flex-col h-full bg-background relative">
+             <header className="bg-surface px-6 py-4 border-b border-gray-100 sticky top-0 z-10 flex items-center justify-between">
+                <h1 className="text-xl font-bold">Resultados de la reunión</h1>
+                <button onClick={() => navigate('/meetings')} className="p-2 hover:bg-gray-100 rounded-full">
+                    <Icon name="close" />
+                </button>
             </header>
-            <div className="flex-1 overflow-y-auto p-6 pb-24 md:pb-8">
-                <div className="max-w-4xl mx-auto w-full space-y-6">
-                    <div className="bg-gradient-to-br from-primary to-blue-600 rounded-3xl p-8 text-white text-center shadow-xl">
-                        <p className="text-sm opacity-90 mb-2 uppercase tracking-wide font-bold">Puntuación Global</p>
-                        <div className="text-7xl font-bold mb-4">85</div>
-                        <div className="flex justify-center gap-2">
-                            {[1,2,3,4,5].map(i => <Icon key={i} name="star" size={24} className={i <= 4 ? "text-yellow-400" : "text-white/30"} />)}
-                        </div>
+
+            <div className="flex-1 overflow-y-auto p-6 pb-24">
+                <div className="max-w-2xl mx-auto space-y-8">
+                    {/* Notes Section */}
+                    <div>
+                        <label className="block text-sm font-medium text-text mb-2">Notas de la reunión</label>
+                        <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Escribe tus notas aquí..."
+                            className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-sm"
+                        ></textarea>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h3 className="font-bold mb-4">Métricas de Voz</h3>
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between mb-2">
-                                        <span className="text-sm font-medium text-text">Claridad</span>
-                                        <span className="text-sm font-bold text-primary">90%</span>
-                                    </div>
-                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-primary w-[90%] rounded-full"></div></div>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between mb-2">
-                                        <span className="text-sm font-medium text-text">Ritmo</span>
-                                        <span className="text-sm font-bold text-orange-500">65%</span>
-                                    </div>
-                                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-orange-500 w-[65%] rounded-full"></div></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-                             <h3 className="font-bold mb-4">Feedback IA</h3>
-                             <ul className="space-y-3">
-                                 <li className="flex gap-3 text-sm text-subtle">
-                                     <Icon name="check_circle" className="text-green-500 shrink-0" size={20} />
-                                     <span>Buena entonación al inicio de la llamada.</span>
-                                 </li>
-                                 <li className="flex gap-3 text-sm text-subtle">
-                                     <Icon name="warning" className="text-orange-500 shrink-0" size={20} />
-                                     <span>Hablaste un poco rápido durante la propuesta de valor.</span>
-                                 </li>
-                             </ul>
-                        </div>
+                    {/* Next Actions Section */}
+                    <div>
+                        <label className="block text-sm font-medium text-text mb-2">Acciones siguientes</label>
+                        <textarea
+                            value={nextActions}
+                            onChange={(e) => setNextActions(e.target.value)}
+                            placeholder="Describe los siguientes pasos..."
+                            className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-sm"
+                        ></textarea>
                     </div>
 
-                    <div className="flex gap-4 pt-4">
-                        <button onClick={() => setState('setup')} className="flex-1 py-4 bg-white border border-gray-200 rounded-xl font-bold text-subtle hover:bg-gray-50 transition-colors">Salir</button>
-                        <button onClick={() => setState('active')} className="flex-1 py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">Reintentar</button>
+                    {/* Lead Status Section */}
+                    <div>
+                        <h3 className="font-bold text-lg mb-4">Estado del lead</h3>
+                        <div className="space-y-3">
+                            {statusOptions.map((option) => (
+                                <div 
+                                    key={option.value}
+                                    onClick={() => setStatus(option.value)}
+                                    className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
+                                        status === option.value 
+                                            ? 'bg-white border-primary border-2 shadow-sm' 
+                                            : 'bg-white border-gray-200 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <span className="font-medium text-text">{option.label}</span>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                        status === option.value ? 'border-primary' : 'border-gray-300'
+                                    }`}>
+                                        {status === option.value && (
+                                            <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
-};
 
-const Objections = () => {
-    const [selectedCategory, setSelectedCategory] = useState('Todas');
-    const categories = ['Todas', 'Precio', 'Tiempo', 'Competencia', 'Necesidad'];
-
-    const filteredObjections = selectedCategory === 'Todas' 
-        ? MOCK_OBJECTIONS 
-        : MOCK_OBJECTIONS.filter(obj => obj.category === selectedCategory);
-
-    return (
-        <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
-                <div className="max-w-7xl mx-auto w-full">
-                    <h1 className="text-2xl font-bold text-center md:text-left mb-6">Biblioteca de Objeciones</h1>
-                    <div className="flex space-x-2 overflow-x-auto no-scrollbar md:flex-wrap md:overflow-visible pb-2">
-                        {categories.map(cat => (
-                            <button 
-                                key={cat}
-                                onClick={() => setSelectedCategory(cat)}
-                                className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
-                                    selectedCategory === cat ? 'bg-secondary text-white' : 'bg-background text-subtle border border-gray-200 hover:bg-gray-100'
-                                }`}
-                            >
-                                {cat}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-w-7xl mx-auto">
-                    {filteredObjections.map(obj => (
-                        <div key={obj.id} className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex flex-col h-full">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                                    <Icon name={obj.icon} size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-text text-lg leading-tight">"{obj.title}"</h3>
-                                    <span className="text-xs font-bold text-subtle bg-gray-100 px-2 py-0.5 rounded mt-1 inline-block">{obj.category}</span>
-                                </div>
-                            </div>
-                            <div className="bg-background p-4 rounded-xl text-sm text-text border border-gray-100 leading-relaxed flex-1">
-                                {obj.response}
-                            </div>
-                            <button className="mt-4 w-full py-2 text-primary font-bold text-sm hover:bg-primary/5 rounded-lg transition-colors">
-                                Practicar respuesta
-                            </button>
-                        </div>
-                    ))}
+            {/* Footer */}
+            <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-surface border-t border-gray-100 p-4 md:p-6 z-20">
+                <div className="max-w-2xl mx-auto">
+                    <button 
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
+                    >
+                        {isSaving ? (
+                            <>
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                Guardando...
+                            </>
+                        ) : (
+                            'Guardar resultados'
+                        )}
+                    </button>
                 </div>
             </div>
         </div>
@@ -626,142 +745,248 @@ const Objections = () => {
 
 const Scenarios = () => {
     return (
-        <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 md:p-6 border-b border-gray-100 sticky top-0 z-10">
-                <h1 className="text-2xl font-bold max-w-7xl mx-auto w-full">Escenarios</h1>
-            </header>
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-                    {MOCK_SCENARIOS.map(scenario => (
-                        <div key={scenario.id} className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col hover:shadow-md transition-shadow">
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${scenario.avatarColor}`}>
-                                        {scenario.personaName.charAt(0)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-text text-lg">{scenario.personaName}</h3>
-                                        <p className="text-xs text-subtle font-medium">{scenario.role} • {scenario.companyType}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <span className="px-3 py-1 rounded bg-gray-100 text-xs font-bold text-subtle uppercase w-fit mb-3">{scenario.difficulty}</span>
-                            <p className="text-sm text-text mb-6 leading-relaxed flex-1">{scenario.description}</p>
-                            <button className="w-full py-3 bg-primary/10 text-primary font-bold rounded-xl text-sm hover:bg-primary/20 transition-colors">Iniciar Simulación</button>
+        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold">Escenarios</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {MOCK_SCENARIOS.map(scenario => (
+                    <div key={scenario.id} className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 transition-shadow hover:shadow-md">
+                         <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${scenario.avatarColor}`}>
+                            <Icon name="person" />
                         </div>
+                        <h3 className="font-bold text-lg text-text">{scenario.personaName}</h3>
+                        <p className="text-sm text-subtle mb-2">{scenario.role} - {scenario.companyType}</p>
+                        <p className="text-sm text-text mb-4">{scenario.description}</p>
+                        <div className="flex justify-between items-center">
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                scenario.difficulty === 'Principiante' ? 'bg-green-100 text-green-700' :
+                                scenario.difficulty === 'Intermedio' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-red-100 text-red-700'
+                            }`}>{scenario.difficulty}</span>
+                            <button className="text-primary font-bold text-sm hover:underline">Iniciar</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const LeadsPage = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-text">Leads</h1>
+                <button className="bg-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+                    <Icon name="add" className="text-white" /> Nuevo Lead
+                </button>
+            </div>
+            <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <table className="w-full text-left">
+                    <thead className="bg-gray-50 text-xs text-subtle uppercase">
+                        <tr>
+                            <th className="p-4">Nombre</th>
+                            <th className="p-4 hidden md:table-cell">Empresa</th>
+                            <th className="p-4">Estado</th>
+                            <th className="p-4 hidden md:table-cell">Prioridad</th>
+                            <th className="p-4 text-right">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {MOCK_LEADS.map(lead => (
+                            <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="p-4">
+                                    <p className="font-bold text-text">{lead.name}</p>
+                                    <p className="text-xs text-subtle md:hidden">{lead.company}</p>
+                                </td>
+                                <td className="p-4 hidden md:table-cell text-text">{lead.company}</td>
+                                <td className="p-4"><span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-bold">{lead.status}</span></td>
+                                <td className="p-4 hidden md:table-cell text-text">{lead.priority}</td>
+                                <td className="p-4 text-right">
+                                    <button className="text-subtle hover:text-primary"><Icon name="more_vert" /></button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const MeetingsPage = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
+             <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-text">Reuniones</h1>
+                <button className="bg-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+                    <Icon name="add" className="text-white" /> Agendar
+                </button>
+            </div>
+            <div className="space-y-4">
+                {MOCK_MEETINGS.map(meeting => (
+                    <div key={meeting.id} className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/meetings/${meeting.id}/results`)}>
+                         <div className="w-12 h-12 bg-primary/10 rounded-lg flex flex-col items-center justify-center text-primary shrink-0">
+                            <span className="text-xs font-bold uppercase">{meeting.date.split('-')[1]}</span>
+                            <span className="text-lg font-bold">{meeting.date.split('-')[2]}</span>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-text">{meeting.title}</h3>
+                            <p className="text-sm text-subtle">{meeting.time} • {meeting.type} con {meeting.leadName}</p>
+                        </div>
+                        <button className="p-2 hover:bg-gray-100 rounded-full text-primary font-bold text-xs bg-primary/5">
+                            Completar
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const WebAnalysis = () => {
+    const [url, setUrl] = useState('');
+    const navigate = useNavigate();
+
+    const handleAnalyze = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Mock analysis logic
+        alert(`Analizando ${url}...`);
+        setTimeout(() => {
+             navigate('/web-history');
+        }, 1000);
+    };
+
+    return (
+        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-2xl mx-auto flex flex-col justify-center min-h-[80vh]">
+            <div className="text-center space-y-4">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
+                    <Icon name="language" size={40} />
+                </div>
+                <h1 className="text-3xl font-bold text-text">Generador de Pitch Web</h1>
+                <p className="text-subtle">Ingresa la URL de un cliente potencial y generaremos el pitch de ventas perfecto analizando su sitio web.</p>
+            </div>
+            
+            <form onSubmit={handleAnalyze} className="bg-surface p-6 rounded-2xl shadow-lg border border-gray-100 space-y-4">
+                <div>
+                    <label className="block text-sm font-bold mb-2 text-text">URL del Sitio Web</label>
+                    <input 
+                        type="url" 
+                        required
+                        placeholder="https://ejemplo.com"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-background text-text"
+                    />
+                </div>
+                <button type="submit" className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                    <Icon name="auto_awesome" className="text-white" />
+                    Generar Pitch con IA
+                </button>
+            </form>
+
+            <div className="text-center">
+                <Link to="/web-history" className="text-primary font-bold hover:underline">Ver historial de análisis</Link>
+            </div>
+        </div>
+    );
+};
+
+const Practice = () => {
+    const [isRecording, setIsRecording] = useState(false);
+
+    return (
+         <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[80vh]">
+            <h1 className="text-2xl font-bold mb-8 text-text">Modo Práctica</h1>
+            
+            <div className="relative">
+                <div className={`w-48 h-48 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-red-50 scale-110' : 'bg-primary/5'}`}>
+                    <button 
+                        onClick={() => setIsRecording(!isRecording)}
+                        className={`w-32 h-32 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary hover:scale-105'}`}
+                    >
+                        <Icon name={isRecording ? "stop" : "mic"} size={48} className="text-white" />
+                    </button>
+                </div>
+            </div>
+            
+            <p className="text-lg font-medium text-subtle mt-8">
+                {isRecording ? "Escuchando... Di tu pitch..." : "Presiona el micrófono para empezar"}
+            </p>
+
+            {isRecording && (
+                <div className="w-64 h-12 bg-gray-100 rounded-full flex items-center justify-center gap-1 mt-6">
+                    {[1,2,3,4,5,4,3,2,1].map((h, i) => (
+                        <div key={i} className="w-1 bg-primary rounded-full animate-bounce" style={{ height: `${h * 4}px`, animationDelay: `${i * 0.1}s` }}></div>
                     ))}
                 </div>
+            )}
+         </div>
+    );
+};
+
+const Objections = () => {
+    return (
+        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6 text-text">Manejador de Objeciones</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {MOCK_OBJECTIONS.map(obj => (
+                    <div key={obj.id} className="bg-surface p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-secondary/10 rounded-lg text-secondary group-hover:bg-secondary group-hover:text-white transition-colors">
+                                <Icon name={obj.icon} size={24} />
+                            </div>
+                            <div>
+                                <span className="text-xs font-bold text-subtle uppercase tracking-wider">{obj.category}</span>
+                                <h3 className="font-bold text-lg mb-2 text-text">{obj.title}</h3>
+                                <p className="text-sm text-subtle line-clamp-2">{obj.response}</p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
 };
 
 const Settings = () => {
-    const navigate = useNavigate();
     return (
-        <div className="flex flex-col h-full bg-background">
-             <header className="bg-surface p-4 md:p-6 border-b border-gray-100 flex items-center sticky top-0 z-10">
-                <button onClick={() => window.history.back()} className="mr-3 md:hidden"><Icon name="arrow_back" /></button>
-                <h1 className="text-2xl font-bold max-w-2xl mx-auto w-full md:pl-0 pl-2">Ajustes</h1>
-            </header>
-            <div className="p-4 md:p-8 space-y-6 max-w-2xl mx-auto w-full">
-                <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="font-bold mb-6 text-lg">Cuenta</h3>
-                    <div className="flex items-center justify-between py-4 border-b border-gray-50">
+        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-2xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6 text-text">Ajustes</h1>
+            <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-100 rounded-lg"><Icon name="person" className="text-text"/></div>
                         <div>
-                             <span className="text-base font-medium text-text block">Notificaciones</span>
-                             <span className="text-xs text-subtle">Recibe alertas sobre tus reuniones</span>
+                            <p className="font-bold text-text">Perfil</p>
+                            <p className="text-xs text-subtle">Editar información personal</p>
                         </div>
-                        <div className="w-12 h-7 bg-primary rounded-full relative cursor-pointer"><div className="w-5 h-5 bg-white rounded-full absolute right-1 top-1 shadow-sm"></div></div>
                     </div>
-                    <div className="flex items-center justify-between py-4">
+                    <Icon name="chevron_right" className="text-gray-400" />
+                </div>
+                 <div className="p-4 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gray-100 rounded-lg"><Icon name="notifications" className="text-text"/></div>
                         <div>
-                             <span className="text-base font-medium text-text block">Modo Oscuro</span>
-                             <span className="text-xs text-subtle">Interfaz con colores oscuros</span>
-                        </div>
-                        <div className="w-12 h-7 bg-gray-200 rounded-full relative cursor-pointer"><div className="w-5 h-5 bg-white rounded-full absolute left-1 top-1 shadow-sm"></div></div>
-                    </div>
-                </div>
-                
-                <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-                     <h3 className="font-bold mb-6 text-lg">Suscripción</h3>
-                     <div className="bg-background p-4 rounded-xl mb-4">
-                         <div className="flex justify-between items-center mb-2">
-                             <span className="font-bold text-text">Plan Pro</span>
-                             <span className="text-xs font-bold bg-green-100 text-green-600 px-2 py-1 rounded">ACTIVO</span>
-                         </div>
-                         <p className="text-xs text-subtle">Próxima renovación: 24 Oct 2023</p>
-                     </div>
-                     <button className="text-primary text-sm font-bold hover:underline">Gestionar facturación</button>
-                </div>
-
-                <button 
-                    onClick={() => navigate('/login')}
-                    className="w-full py-4 bg-red-50 text-red-600 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-                >
-                    <Icon name="logout" /> Cerrar Sesión
-                </button>
-                
-                <p className="text-center text-xs text-subtle pt-4">Version 1.2.0</p>
-            </div>
-        </div>
-    );
-};
-
-const AnalysisPage = () => {
-    return (
-         <div className="flex flex-col h-full bg-background">
-            <header className="bg-surface p-4 md:p-6 border-b border-gray-100 text-center md:text-left sticky top-0 z-10">
-                <h1 className="text-2xl font-bold max-w-7xl mx-auto w-full">Progreso de Entrenamiento</h1>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-                <div className="max-w-7xl mx-auto w-full space-y-6">
-                    {/* Score Cards */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border-l-4 border-primary">
-                            <p className="text-sm text-subtle mb-1">Simulaciones</p>
-                            <p className="text-3xl font-bold text-text">24</p>
-                        </div>
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border-l-4 border-accent">
-                            <p className="text-sm text-subtle mb-1">Nota Media</p>
-                            <p className="text-3xl font-bold text-text">8.5</p>
-                        </div>
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border-l-4 border-warning">
-                            <p className="text-sm text-subtle mb-1">Racha</p>
-                            <p className="text-3xl font-bold text-text">5 días</p>
-                        </div>
-                         <div className="bg-surface p-6 rounded-2xl shadow-sm border-l-4 border-danger">
-                            <p className="text-sm text-subtle mb-1">Objeciones</p>
-                            <p className="text-3xl font-bold text-text">150</p>
+                            <p className="font-bold text-text">Notificaciones</p>
+                            <p className="text-xs text-subtle">Gestionar alertas</p>
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Weekly Chart */}
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h3 className="font-bold text-text mb-6 text-lg">Constancia Semanal</h3>
-                            <div className="h-64">
-                                <WeeklyBarChart 
-                                    labels={['L', 'M', 'X', 'J', 'V', 'S', 'D']} 
-                                    data={[2, 4, 1, 5, 3, 0, 0]} 
-                                />
-                            </div>
-                        </div>
-
-                        {/* Skills Radar */}
-                        <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h3 className="font-bold text-text mb-6 text-lg">Mapa de Habilidades</h3>
-                            <div className="h-64 w-full">
-                                <SkillsRadarChart scores={[60, 85, 45, 70, 75]} />
-                            </div>
+                    <Icon name="chevron_right" className="text-gray-400" />
+                </div>
+                 <div className="p-4 flex items-center justify-between hover:bg-red-50 cursor-pointer">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-red-100 rounded-lg"><Icon name="logout" className="text-red-500" /></div>
+                        <div>
+                            <p className="font-bold text-red-500">Cerrar Sesión</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     );
-}
+};
 
 // --- APP COMPONENT ---
 
@@ -778,11 +1003,14 @@ const App = () => {
                         <Route path="/scenarios" element={<Scenarios />} />
                         <Route path="/leads" element={<LeadsPage />} />
                         <Route path="/meetings" element={<MeetingsPage />} />
+                        <Route path="/meetings/:id/results" element={<MeetingResultsPage />} />
                         <Route path="/web-analysis" element={<WebAnalysis />} />
+                        <Route path="/web-history" element={<WebHistoryPage />} />
                         <Route path="/practice" element={<Practice />} />
-                        <Route path="/analysis" element={<AnalysisPage />} />
+                        <Route path="/analysis" element={<CallHistoryPage />} />
                         <Route path="/objections" element={<Objections />} />
                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/admin" element={<AdminPage />} />
                     </Routes>
                     <BottomNav />
                 </main>
