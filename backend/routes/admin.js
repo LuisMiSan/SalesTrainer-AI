@@ -50,7 +50,8 @@ router.get('/users', async (req, res) => {
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { email: { $regex: search, $options: 'i' } },
+        { username: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -77,7 +78,56 @@ router.get('/users', async (req, res) => {
   }
 });
 
-// PUT /api/admin/users/:id/role - Update user role
+// GET /api/admin/users/:id - Get full user details
+router.get('/users/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.json({ success: true, user: user.toPublicJSON() });
+    } catch (error) {
+        console.error('Error fetching user details:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// PUT /api/admin/users/:id - Update user details (Admin override)
+router.put('/users/:id', async (req, res) => {
+    try {
+        const { name, username, email, role, preferences } = req.body;
+        
+        // Check uniqueness if username/email changed
+        if (username) {
+            const exists = await User.findOne({ username, _id: { $ne: req.params.id } });
+            if (exists) return res.status(400).json({ success: false, message: 'Username taken' });
+        }
+        if (email) {
+            const exists = await User.findOne({ email, _id: { $ne: req.params.id } });
+            if (exists) return res.status(400).json({ success: false, message: 'Email taken' });
+        }
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (username) updateData.username = username;
+        if (email) updateData.email = email;
+        if (role) updateData.role = role;
+        if (preferences) updateData.preferences = preferences;
+
+        const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        res.json({ success: true, user });
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// PUT /api/admin/users/:id/role - Update user role (Legacy support)
 router.put('/users/:id/role', async (req, res) => {
   try {
     const { role } = req.body;

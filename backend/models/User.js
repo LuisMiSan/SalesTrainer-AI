@@ -7,6 +7,12 @@ const userSchema = new mongoose.Schema({
     required: [true, 'El nombre es requerido'],
     trim: true
   },
+  username: {
+    type: String,
+    trim: true,
+    unique: true,
+    sparse: true // Permite valores nulos/únicos
+  },
   email: {
     type: String,
     required: [true, 'El email es requerido'],
@@ -58,6 +64,11 @@ const userSchema = new mongoose.Schema({
       default: 'light'
     },
     notifications: {
+      practiceReminders: { type: Boolean, default: false },
+      practiceFrequency: { type: String, enum: ['daily', 'weekly'], default: 'daily' },
+      aiFeedback: { type: Boolean, default: false },
+      achievements: { type: Boolean, default: false },
+      weeklySummary: { type: Boolean, default: false },
       email: { type: Boolean, default: true },
       push: { type: Boolean, default: true },
       defaultReminderMinutes: { type: Number, default: 15 }
@@ -98,6 +109,7 @@ userSchema.methods.toPublicJSON = function() {
   return {
     id: this._id,
     name: this.name,
+    username: this.username,
     email: this.email,
     company: this.company,
     role: this.role,

@@ -16,7 +16,7 @@ const generateToken = (userId) => {
 // POST /api/auth/register - Registro de usuario
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, company } = req.body;
+    const { name, email, password, company, username } = req.body;
 
     // Validaciones
     if (!name || !email || !password) {
@@ -35,12 +35,24 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Verificar si el username ya existe (si se provee)
+    if (username) {
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({
+                success: false,
+                message: 'El nombre de usuario ya está en uso'
+            });
+        }
+    }
+
     // Crear usuario
     const user = new User({
       name,
       email,
       password,
-      company
+      company,
+      username
     });
 
     await user.save();
@@ -150,7 +162,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 // PUT /api/auth/profile - Actualizar perfil
 router.put('/profile', authMiddleware, async (req, res) => {
   try {
-    const { name, company, avatar, preferences } = req.body;
+    const { name, company, avatar, preferences, username, email } = req.body;
     
     const user = await User.findById(req.userId);
     if (!user) {
@@ -158,6 +170,24 @@ router.put('/profile', authMiddleware, async (req, res) => {
         success: false,
         message: 'Usuario no encontrado'
       });
+    }
+
+    // Check username uniqueness if changing
+    if (username && username !== user.username) {
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({ success: false, message: 'El nombre de usuario ya está en uso' });
+        }
+        user.username = username;
+    }
+
+    // Check email uniqueness if changing (optional, usually requires verification)
+    if (email && email !== user.email) {
+        const existingEmail = await User.findOne({ email });
+        if (existingEmail) {
+            return res.status(400).json({ success: false, message: 'El email ya está en uso' });
+        }
+        user.email = email;
     }
 
     // Actualizar campos permitidos

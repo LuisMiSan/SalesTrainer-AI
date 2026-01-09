@@ -126,6 +126,16 @@ const ClipPlayerModal = ({ clip, onClose }: { clip: any, onClose: () => void }) 
     );
 };
 
+// Toggle Component
+const Toggle = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
+    <button 
+        onClick={onChange}
+        className={`w-12 h-7 rounded-full transition-colors relative focus:outline-none ${checked ? 'bg-primary' : 'bg-gray-200'}`}
+    >
+        <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 shadow-sm transition-transform transform duration-200 ease-in-out ${checked ? 'translate-x-5.5' : 'translate-x-0.5'}`} style={{ left: 0, transform: checked ? 'translateX(22px)' : 'translateX(2px)' }}></div>
+    </button>
+);
+
 // --- PAGES ---
 
 const LoginPage = () => {
@@ -500,14 +510,250 @@ const WebHistoryPage = ({ isUserView = false, userName = '' }) => {
     );
 };
 
+// --- NEW PROFILE PAGE ---
+const ProfilePage = ({ isUserView = false, userId = null }: { isUserView?: boolean, userId?: string | null }) => {
+    // Mock user state matching the screenshot
+    const [user, setUser] = useState({
+        name: 'Sophia Bennett',
+        username: 'sophiab',
+        email: 'sophia.bennett@email.com',
+        joinDate: '2022',
+        avatar: 'https://i.pravatar.cc/300?u=sophiabennett',
+        preferences: {
+            notifications: {
+                practiceReminders: false,
+                practiceFrequency: 'daily', // 'daily' | 'weekly'
+                aiFeedback: false,
+                achievements: false,
+                weeklySummary: false
+            }
+        }
+    });
+
+    const toggleNotification = (key: string) => {
+        setUser(prev => ({
+            ...prev,
+            preferences: {
+                ...prev.preferences,
+                notifications: {
+                    ...prev.preferences.notifications,
+                    [key]: !prev.preferences.notifications[key as keyof typeof prev.preferences.notifications]
+                }
+            }
+        }));
+    };
+
+    const setFrequency = (freq: string) => {
+        setUser(prev => ({
+            ...prev,
+            preferences: {
+                ...prev.preferences,
+                notifications: {
+                    ...prev.preferences.notifications,
+                    practiceFrequency: freq
+                }
+            }
+        }));
+    };
+
+    return (
+        <div className="flex flex-col h-full bg-background font-sans">
+             <header className="bg-surface px-4 py-4 border-b border-gray-100 sticky top-0 z-10 flex items-center">
+                <button onClick={() => window.history.back()} className="mr-4 text-text hover:bg-gray-100 rounded-full p-2">
+                    <Icon name="arrow_back" size={24} />
+                </button>
+                <h1 className="text-lg font-bold flex-1 text-center pr-12">Configuración del Perfil</h1>
+            </header>
+
+            <div className="flex-1 overflow-y-auto pb-24 md:pb-8">
+                <div className="max-w-md mx-auto w-full px-6 pt-8">
+                    {/* Avatar Section */}
+                    <div className="flex flex-col items-center mb-8">
+                        <div className="relative">
+                            <img 
+                                src={user.avatar} 
+                                alt={user.name} 
+                                className="w-28 h-28 rounded-full object-cover border-4 border-[#F2C94C]/20 shadow-sm"
+                            />
+                            <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white border-2 border-white shadow-sm hover:bg-primary/90 transition-colors">
+                                <Icon name="edit" size={16} />
+                            </button>
+                        </div>
+                        <h2 className="mt-4 text-2xl font-bold text-text">{user.name}</h2>
+                        <p className="text-subtle text-base">@{user.username}</p>
+                        <p className="text-subtle text-sm mt-1">Se unió en {user.joinDate}</p>
+                    </div>
+
+                    {/* Information Section */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-text mb-4">Información</h3>
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                             <div className="p-4 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors group">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-base text-text mb-0.5">Correo electrónico</p>
+                                    <p className="text-sm text-subtle truncate">{user.email}</p>
+                                </div>
+                                <Icon name="chevron_right" className="text-gray-400" />
+                            </div>
+                            <div className="p-4 flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors group">
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-base text-text mb-0.5">Nombre de usuario</p>
+                                    <p className="text-sm text-subtle truncate">{user.name}</p>
+                                </div>
+                                <Icon name="chevron_right" className="text-gray-400" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Notifications Section */}
+                    <div className="mb-8">
+                        <h3 className="text-lg font-bold text-text mb-4">Notificaciones</h3>
+                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden p-1">
+                            {/* Practice Reminders */}
+                            <div className="p-4 flex items-center justify-between">
+                                <span className="text-base text-text">Recordatorios de Práctica</span>
+                                <Toggle 
+                                    checked={user.preferences.notifications.practiceReminders} 
+                                    onChange={() => toggleNotification('practiceReminders')} 
+                                />
+                            </div>
+
+                            {/* Frequency Selector */}
+                            <div className="px-4 pb-4">
+                                <p className="text-sm text-subtle mb-3">Frecuencia</p>
+                                <div className="flex bg-gray-100 rounded-lg p-1">
+                                    <button 
+                                        onClick={() => setFrequency('daily')}
+                                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
+                                            user.preferences.notifications.practiceFrequency === 'daily' 
+                                            ? 'bg-primary/20 text-primary shadow-sm' 
+                                            : 'text-subtle hover:text-text'
+                                        }`}
+                                    >
+                                        Diario
+                                    </button>
+                                    <button 
+                                        onClick={() => setFrequency('weekly')}
+                                        className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${
+                                            user.preferences.notifications.practiceFrequency === 'weekly' 
+                                            ? 'bg-primary/20 text-primary shadow-sm' 
+                                            : 'text-subtle hover:text-text'
+                                        }`}
+                                    >
+                                        Semanal
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="border-t border-gray-100"></div>
+
+                            {/* AI Feedback */}
+                            <div className="p-4 flex items-center justify-between">
+                                <span className="text-base text-text">Feedback de IA Disponible</span>
+                                <Toggle 
+                                    checked={user.preferences.notifications.aiFeedback} 
+                                    onChange={() => toggleNotification('aiFeedback')} 
+                                />
+                            </div>
+
+                            <div className="border-t border-gray-100"></div>
+
+                            {/* Achievements */}
+                            <div className="p-4 flex items-center justify-between">
+                                <span className="text-base text-text">Logros Desbloqueados</span>
+                                <Toggle 
+                                    checked={user.preferences.notifications.achievements} 
+                                    onChange={() => toggleNotification('achievements')} 
+                                />
+                            </div>
+
+                            <div className="border-t border-gray-100"></div>
+
+                            {/* Weekly Summary */}
+                            <div className="p-4 flex items-center justify-between">
+                                <span className="text-base text-text">Resumen Semanal</span>
+                                <Toggle 
+                                    checked={user.preferences.notifications.weeklySummary} 
+                                    onChange={() => toggleNotification('weeklySummary')} 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- NEW SUBSCRIPTION SUCCESS PAGE ---
+const SubscriptionSuccessPage = () => {
+    const navigate = useNavigate();
+
+    return (
+        <div className="flex flex-col h-full bg-background font-sans items-center justify-center p-6 min-h-screen">
+            <div className="w-full max-w-md bg-transparent flex flex-col items-center">
+                {/* Success Icon */}
+                <div className="mb-8">
+                    <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center relative">
+                        <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
+                            <Icon name="check" size={48} className="text-white font-bold" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Title */}
+                <h1 className="text-2xl font-bold text-center text-text mb-4 leading-tight">
+                    ¡Felicidades! Ya eres <br/> Premium.
+                </h1>
+
+                {/* Description */}
+                <p className="text-center text-subtle mb-10 px-4 leading-relaxed">
+                    Tu suscripción ha sido activada con éxito y ahora tienes acceso a todas las funciones exclusivas.
+                </p>
+
+                {/* Plan Details Card */}
+                <div className="w-full bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-10">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                        <span className="text-subtle text-sm">Plan</span>
+                        <span className="text-text font-bold text-sm">Premium</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 pt-4">
+                        <span className="text-subtle text-sm">Próxima renovación</span>
+                        <span className="text-text font-bold text-sm">15 de Julio, 2024</span>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="w-full space-y-3">
+                    <button 
+                        onClick={() => navigate('/dashboard')}
+                        className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors flex items-center justify-center"
+                    >
+                        Ir al Dashboard
+                    </button>
+                    <button 
+                        onClick={() => navigate('/settings')}
+                        className="w-full h-12 bg-primary/20 text-primary font-bold rounded-xl hover:bg-primary/30 transition-colors flex items-center justify-center"
+                    >
+                        Gestionar Suscripción
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const AdminPage = () => {
-    const [viewingUser, setViewingUser] = useState<{id: string, name: string, type: 'calls' | 'pitches'} | null>(null);
+    // Updated ViewingUser type to include 'profile'
+    const [viewingUser, setViewingUser] = useState<{id: string, name: string, type: 'calls' | 'pitches' | 'profile'} | null>(null);
 
     if (viewingUser) {
         if (viewingUser.type === 'calls') {
             return <CallHistoryPage isUserView={true} userName={viewingUser.name} />;
-        } else {
+        } else if (viewingUser.type === 'pitches') {
             return <WebHistoryPage isUserView={true} userName={viewingUser.name} />;
+        } else if (viewingUser.type === 'profile') {
+            return <ProfilePage isUserView={true} userId={viewingUser.id} />;
         }
     }
 
@@ -576,16 +822,22 @@ const AdminPage = () => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-3">
                                                 <button 
+                                                    onClick={() => setViewingUser({id: '1', name: 'Ana Martinez', type: 'profile'})}
+                                                    className="text-subtle font-bold text-xs hover:text-primary hover:underline"
+                                                >
+                                                    Perfil
+                                                </button>
+                                                <button 
                                                     onClick={() => setViewingUser({id: '1', name: 'Ana Martinez', type: 'calls'})}
                                                     className="text-primary font-bold text-xs hover:underline"
                                                 >
-                                                    Ver Llamadas
+                                                    Llamadas
                                                 </button>
                                                 <button 
                                                     onClick={() => setViewingUser({id: '1', name: 'Ana Martinez', type: 'pitches'})}
                                                     className="text-secondary font-bold text-xs hover:underline"
                                                 >
-                                                    Ver Pitches
+                                                    Pitches
                                                 </button>
                                                 <button className="text-subtle hover:text-primary"><Icon name="more_vert" size={20} /></button>
                                             </div>
@@ -607,16 +859,22 @@ const AdminPage = () => {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex justify-end gap-3">
                                                 <button 
+                                                    onClick={() => setViewingUser({id: '2', name: 'Carlos Ruiz', type: 'profile'})}
+                                                    className="text-subtle font-bold text-xs hover:text-primary hover:underline"
+                                                >
+                                                    Perfil
+                                                </button>
+                                                <button 
                                                     onClick={() => setViewingUser({id: '2', name: 'Carlos Ruiz', type: 'calls'})}
                                                     className="text-primary font-bold text-xs hover:underline"
                                                 >
-                                                    Ver Llamadas
+                                                    Llamadas
                                                 </button>
                                                 <button 
                                                     onClick={() => setViewingUser({id: '2', name: 'Carlos Ruiz', type: 'pitches'})}
                                                     className="text-secondary font-bold text-xs hover:underline"
                                                 >
-                                                    Ver Pitches
+                                                    Pitches
                                                 </button>
                                                 <button className="text-subtle hover:text-primary"><Icon name="more_vert" size={20} /></button>
                                             </div>
@@ -632,138 +890,28 @@ const AdminPage = () => {
     );
 };
 
-// --- NEW MEETING RESULTS PAGE ---
-
-const MeetingResultsPage = () => {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const [notes, setNotes] = useState('');
-    const [nextActions, setNextActions] = useState('');
-    const [status, setStatus] = useState('contactado');
-    const [isSaving, setIsSaving] = useState(false);
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsSaving(false);
-            navigate('/meetings');
-        }, 1000);
-    };
-
-    const statusOptions = [
-        { value: 'contactado', label: 'En contacto' },
-        { value: 'reunión', label: 'Reunión programada' },
-        { value: 'propuesta', label: 'Propuesta enviada' },
-        { value: 'negociación', label: 'Negociación' },
-    ];
-
-    return (
-        <div className="flex flex-col h-full bg-background relative">
-             <header className="bg-surface px-6 py-4 border-b border-gray-100 sticky top-0 z-10 flex items-center justify-between">
-                <h1 className="text-xl font-bold">Resultados de la reunión</h1>
-                <button onClick={() => navigate('/meetings')} className="p-2 hover:bg-gray-100 rounded-full">
-                    <Icon name="close" />
-                </button>
-            </header>
-
-            <div className="flex-1 overflow-y-auto p-6 pb-24">
-                <div className="max-w-2xl mx-auto space-y-8">
-                    {/* Notes Section */}
-                    <div>
-                        <label className="block text-sm font-medium text-text mb-2">Notas de la reunión</label>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Escribe tus notas aquí..."
-                            className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-sm"
-                        ></textarea>
-                    </div>
-
-                    {/* Next Actions Section */}
-                    <div>
-                        <label className="block text-sm font-medium text-text mb-2">Acciones siguientes</label>
-                        <textarea
-                            value={nextActions}
-                            onChange={(e) => setNextActions(e.target.value)}
-                            placeholder="Describe los siguientes pasos..."
-                            className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none text-sm"
-                        ></textarea>
-                    </div>
-
-                    {/* Lead Status Section */}
-                    <div>
-                        <h3 className="font-bold text-lg mb-4">Estado del lead</h3>
-                        <div className="space-y-3">
-                            {statusOptions.map((option) => (
-                                <div 
-                                    key={option.value}
-                                    onClick={() => setStatus(option.value)}
-                                    className={`p-4 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
-                                        status === option.value 
-                                            ? 'bg-white border-primary border-2 shadow-sm' 
-                                            : 'bg-white border-gray-200 hover:border-gray-300'
-                                    }`}
-                                >
-                                    <span className="font-medium text-text">{option.label}</span>
-                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                        status === option.value ? 'border-primary' : 'border-gray-300'
-                                    }`}>
-                                        {status === option.value && (
-                                            <div className="w-2.5 h-2.5 bg-primary rounded-full"></div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Footer */}
-            <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-surface border-t border-gray-100 p-4 md:p-6 z-20">
-                <div className="max-w-2xl mx-auto">
-                    <button 
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors disabled:opacity-70 flex items-center justify-center gap-2"
-                    >
-                        {isSaving ? (
-                            <>
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                Guardando...
-                            </>
-                        ) : (
-                            'Guardar resultados'
-                        )}
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+// --- NEW PAGES ---
 
 const Scenarios = () => {
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold">Escenarios</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="p-4 md:p-8 pb-24 md:pb-8">
+            <header className="flex items-center mb-6">
+                 <button onClick={() => window.history.back()} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                 <h1 className="text-2xl font-bold">Escenarios de Práctica</h1>
+            </header>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {MOCK_SCENARIOS.map(scenario => (
-                    <div key={scenario.id} className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 transition-shadow hover:shadow-md">
-                         <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 ${scenario.avatarColor}`}>
-                            <Icon name="person" />
+                    <div key={scenario.id} className="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
+                        <div className="flex justify-between items-start mb-3">
+                            <span className={`text-xs font-bold px-2 py-1 rounded ${scenario.avatarColor.split(' ')[0]} ${scenario.avatarColor.split(' ')[1]}`}>{scenario.difficulty}</span>
+                            <span className={`text-xs font-bold ${scenario.status === 'Disponible' ? 'text-green-500' : 'text-gray-400'}`}>{scenario.status}</span>
                         </div>
-                        <h3 className="font-bold text-lg text-text">{scenario.personaName}</h3>
-                        <p className="text-sm text-subtle mb-2">{scenario.role} - {scenario.companyType}</p>
-                        <p className="text-sm text-text mb-4">{scenario.description}</p>
-                        <div className="flex justify-between items-center">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                scenario.difficulty === 'Principiante' ? 'bg-green-100 text-green-700' :
-                                scenario.difficulty === 'Intermedio' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-red-100 text-red-700'
-                            }`}>{scenario.difficulty}</span>
-                            <button className="text-primary font-bold text-sm hover:underline">Iniciar</button>
-                        </div>
+                        <h3 className="font-bold text-lg mb-1">{scenario.personaName}</h3>
+                        <p className="text-sm text-subtle mb-3 font-medium">{scenario.role} • {scenario.companyType}</p>
+                        <p className="text-sm text-text mb-6 flex-1">{scenario.description}</p>
+                        <button className="w-full bg-primary text-white py-3 rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+                            Iniciar Simulación
+                        </button>
                     </div>
                 ))}
             </div>
@@ -774,41 +922,54 @@ const Scenarios = () => {
 const LeadsPage = () => {
     const navigate = useNavigate();
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-text">Leads</h1>
-                <button className="bg-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
-                    <Icon name="add" className="text-white" /> Nuevo Lead
+        <div className="p-4 md:p-8 pb-24 md:pb-8 flex flex-col h-full">
+            <header className="flex justify-between items-center mb-6">
+                 <div className="flex items-center">
+                    <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                    <h1 className="text-2xl font-bold">Mis Leads</h1>
+                 </div>
+                <button className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+                    <Icon name="add" size={20} className="text-white" /> <span className="hidden sm:inline">Nuevo Lead</span>
                 </button>
-            </div>
-            <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-xs text-subtle uppercase">
-                        <tr>
-                            <th className="p-4">Nombre</th>
-                            <th className="p-4 hidden md:table-cell">Empresa</th>
-                            <th className="p-4">Estado</th>
-                            <th className="p-4 hidden md:table-cell">Prioridad</th>
-                            <th className="p-4 text-right">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                        {MOCK_LEADS.map(lead => (
-                            <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="p-4">
-                                    <p className="font-bold text-text">{lead.name}</p>
-                                    <p className="text-xs text-subtle md:hidden">{lead.company}</p>
-                                </td>
-                                <td className="p-4 hidden md:table-cell text-text">{lead.company}</td>
-                                <td className="p-4"><span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-bold">{lead.status}</span></td>
-                                <td className="p-4 hidden md:table-cell text-text">{lead.priority}</td>
-                                <td className="p-4 text-right">
-                                    <button className="text-subtle hover:text-primary"><Icon name="more_vert" /></button>
-                                </td>
+            </header>
+            <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex-1">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 text-xs text-subtle uppercase border-b border-gray-100">
+                            <tr>
+                                <th className="px-6 py-4 font-bold">Nombre</th>
+                                <th className="px-6 py-4 font-bold hidden sm:table-cell">Empresa</th>
+                                <th className="px-6 py-4 font-bold">Estado</th>
+                                <th className="px-6 py-4 font-bold hidden md:table-cell">Prioridad</th>
+                                <th className="px-6 py-4 font-bold hidden lg:table-cell">Valor</th>
+                                <th className="px-6 py-4 font-bold text-right">Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 text-sm">
+                            {MOCK_LEADS.map(lead => (
+                                <tr key={lead.id} className="hover:bg-gray-50 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <p className="font-bold text-text">{lead.name}</p>
+                                        <p className="text-xs text-subtle sm:hidden">{lead.company}</p>
+                                    </td>
+                                    <td className="px-6 py-4 hidden sm:table-cell text-text">{lead.company}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                            lead.status === 'Ganado' ? 'bg-green-100 text-green-700' :
+                                            lead.status === 'Nuevo' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-gray-100 text-gray-700'
+                                        }`}>{lead.status}</span>
+                                    </td>
+                                    <td className="px-6 py-4 hidden md:table-cell text-text">{lead.priority}</td>
+                                    <td className="px-6 py-4 hidden lg:table-cell text-text font-medium">${lead.value.toLocaleString()}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button className="text-subtle hover:text-primary"><Icon name="more_vert" /></button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
@@ -817,27 +978,32 @@ const LeadsPage = () => {
 const MeetingsPage = () => {
     const navigate = useNavigate();
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
-             <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-text">Reuniones</h1>
-                <button className="bg-primary text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
-                    <Icon name="add" className="text-white" /> Agendar
+        <div className="p-4 md:p-8 pb-24 md:pb-8">
+             <header className="flex justify-between items-center mb-6">
+                <div className="flex items-center">
+                    <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                    <h1 className="text-2xl font-bold">Agenda</h1>
+                </div>
+                <button className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors">
+                    <Icon name="add" size={20} className="text-white" /> <span className="hidden sm:inline">Agendar</span>
                 </button>
-            </div>
-            <div className="space-y-4">
+            </header>
+             <div className="space-y-4">
                 {MOCK_MEETINGS.map(meeting => (
-                    <div key={meeting.id} className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/meetings/${meeting.id}/results`)}>
-                         <div className="w-12 h-12 bg-primary/10 rounded-lg flex flex-col items-center justify-center text-primary shrink-0">
-                            <span className="text-xs font-bold uppercase">{meeting.date.split('-')[1]}</span>
-                            <span className="text-lg font-bold">{meeting.date.split('-')[2]}</span>
+                    <div key={meeting.id} onClick={() => navigate(`/meetings/${meeting.id}/results`)} className="bg-surface p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
+                                <Icon name="event" size={24} />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="font-bold text-lg text-text truncate">{meeting.title}</h3>
+                                <p className="text-sm text-subtle truncate">{meeting.date} • {meeting.time} • {meeting.leadName}</p>
+                            </div>
                         </div>
-                        <div className="flex-1">
-                            <h3 className="font-bold text-text">{meeting.title}</h3>
-                            <p className="text-sm text-subtle">{meeting.time} • {meeting.type} con {meeting.leadName}</p>
-                        </div>
-                        <button className="p-2 hover:bg-gray-100 rounded-full text-primary font-bold text-xs bg-primary/5">
-                            Completar
-                        </button>
+                         <div className="flex flex-col items-end gap-2">
+                             <span className="text-xs font-bold bg-gray-100 px-3 py-1 rounded-full text-subtle whitespace-nowrap">{meeting.status}</span>
+                             <Icon name="chevron_right" className="text-gray-300" />
+                         </div>
                     </div>
                 ))}
             </div>
@@ -845,103 +1011,174 @@ const MeetingsPage = () => {
     );
 };
 
-const WebAnalysis = () => {
-    const [url, setUrl] = useState('');
+const MeetingResultsPage = () => {
+    const { id } = useParams();
     const navigate = useNavigate();
+    // Mocking finding the meeting (in reality would fetch)
+    const meeting = MOCK_MEETINGS.find(m => m.id === Number(id));
 
-    const handleAnalyze = (e: React.FormEvent) => {
-        e.preventDefault();
-        // Mock analysis logic
-        alert(`Analizando ${url}...`);
-        setTimeout(() => {
-             navigate('/web-history');
-        }, 1000);
-    };
+    if (!meeting) return <div>Reunión no encontrada</div>;
 
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-2xl mx-auto flex flex-col justify-center min-h-[80vh]">
-            <div className="text-center space-y-4">
-                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto text-primary">
-                    <Icon name="language" size={40} />
-                </div>
-                <h1 className="text-3xl font-bold text-text">Generador de Pitch Web</h1>
-                <p className="text-subtle">Ingresa la URL de un cliente potencial y generaremos el pitch de ventas perfecto analizando su sitio web.</p>
-            </div>
+        <div className="p-4 md:p-8 pb-24 md:pb-8">
+            <header className="flex items-center mb-6">
+                <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary rounded-full p-1"><Icon name="arrow_back" size={24} /></button>
+                <h1 className="text-2xl font-bold">Detalle de Reunión</h1>
+            </header>
             
-            <form onSubmit={handleAnalyze} className="bg-surface p-6 rounded-2xl shadow-lg border border-gray-100 space-y-4">
-                <div>
-                    <label className="block text-sm font-bold mb-2 text-text">URL del Sitio Web</label>
-                    <input 
-                        type="url" 
-                        required
-                        placeholder="https://ejemplo.com"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:ring-1 focus:ring-primary focus:border-primary outline-none bg-background text-text"
-                    />
+            <div className="bg-surface p-6 rounded-2xl shadow-sm border border-gray-100 mb-6">
+                <h2 className="text-xl font-bold mb-2">{meeting.title}</h2>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-sm text-subtle mb-4">
+                    <div className="flex items-center gap-1"><Icon name="person" size={18}/> {meeting.leadName}</div>
+                    <div className="flex items-center gap-1"><Icon name="schedule" size={18}/> {meeting.date} - {meeting.time}</div>
+                    <div className="flex items-center gap-1"><Icon name="videocam" size={18}/> {meeting.type}</div>
                 </div>
-                <button type="submit" className="w-full h-12 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-                    <Icon name="auto_awesome" className="text-white" />
-                    Generar Pitch con IA
-                </button>
-            </form>
+                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h3 className="font-bold text-primary mb-2 text-sm uppercase">Notas de la IA</h3>
+                    <p className="text-text text-sm leading-relaxed">
+                        La reunión fue productiva. El cliente mostró interés en la funcionalidad de reportes avanzados.
+                        Se detectaron momentos de duda al hablar del precio, se recomienda reforzar la propuesta de valor.
+                    </p>
+                </div>
+            </div>
 
-            <div className="text-center">
-                <Link to="/web-history" className="text-primary font-bold hover:underline">Ver historial de análisis</Link>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-text mb-4">Métricas de Comunicación</h3>
+                    <div className="h-64 w-full">
+                        <SkillsRadarChart scores={[75, 80, 60, 85, 70]} />
+                    </div>
+                </div>
+                <div className="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100">
+                     <h3 className="font-bold text-text mb-4">Clips Clave</h3>
+                     <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 cursor-pointer transition-colors">
+                            <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600"><Icon name="check" size={20}/></div>
+                            <div className="flex-1">
+                                <p className="font-bold text-sm">Cierre exitoso</p>
+                                <p className="text-xs text-subtle">0:45 - 1:15</p>
+                            </div>
+                            <Icon name="play_circle" className="text-primary" size={24}/>
+                        </div>
+                        <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 cursor-pointer transition-colors">
+                            <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600"><Icon name="warning" size={20}/></div>
+                            <div className="flex-1">
+                                <p className="font-bold text-sm">Objeción de precio</p>
+                                <p className="text-xs text-subtle">5:20 - 6:00</p>
+                            </div>
+                             <Icon name="play_circle" className="text-primary" size={24}/>
+                        </div>
+                     </div>
+                </div>
             </div>
         </div>
     );
 };
 
+const WebAnalysis = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="p-4 md:p-8 pb-24 md:pb-8 max-w-2xl mx-auto flex flex-col h-full justify-center">
+             <header className="flex items-center mb-8 absolute top-4 left-4 md:static md:mb-8">
+                 <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                 <h1 className="text-2xl font-bold md:text-center md:w-full md:ml-0 ml-2">Generador de Pitch IA</h1>
+            </header>
+             <div className="bg-surface p-8 rounded-3xl shadow-lg border border-gray-100">
+                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto">
+                    <Icon name="auto_awesome" size={32} />
+                </div>
+                <h2 className="text-xl font-bold text-center mb-2">Analiza cualquier empresa</h2>
+                <p className="text-subtle text-center mb-8 text-sm">Ingresa la URL del sitio web y nuestra IA generará un pitch de ventas personalizado en segundos.</p>
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-text uppercase mb-2 ml-1">Sitio Web</label>
+                        <div className="relative">
+                            <Icon name="language" className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <input type="text" placeholder="https://www.ejemplo.com" className="w-full h-14 pl-12 pr-4 rounded-xl border border-gray-200 bg-background focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-medium" />
+                        </div>
+                    </div>
+                    <button className="w-full h-14 bg-primary text-white text-lg font-bold rounded-xl shadow-xl shadow-primary/20 hover:bg-primary/90 transition-transform active:scale-[0.98] flex items-center justify-center gap-2">
+                        <Icon name="analytics" className="text-white" /> Generar Pitch
+                    </button>
+                </div>
+             </div>
+        </div>
+    );
+};
+
 const Practice = () => {
+    const navigate = useNavigate();
     const [isRecording, setIsRecording] = useState(false);
 
     return (
-         <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto flex flex-col items-center justify-center min-h-[80vh]">
-            <h1 className="text-2xl font-bold mb-8 text-text">Modo Práctica</h1>
+        <div className="p-4 md:p-8 pb-24 md:pb-8 flex flex-col h-full relative">
+            <header className="flex items-center mb-6 z-10">
+                 <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                 <h1 className="text-2xl font-bold">Modo Práctica</h1>
+            </header>
             
-            <div className="relative">
-                <div className={`w-48 h-48 rounded-full flex items-center justify-center transition-all duration-300 ${isRecording ? 'bg-red-50 scale-110' : 'bg-primary/5'}`}>
-                    <button 
-                        onClick={() => setIsRecording(!isRecording)}
-                        className={`w-32 h-32 rounded-full flex items-center justify-center shadow-xl transition-all duration-300 ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-primary hover:scale-105'}`}
-                    >
-                        <Icon name={isRecording ? "stop" : "mic"} size={48} className="text-white" />
-                    </button>
-                </div>
-            </div>
-            
-            <p className="text-lg font-medium text-subtle mt-8">
-                {isRecording ? "Escuchando... Di tu pitch..." : "Presiona el micrófono para empezar"}
-            </p>
+            <div className="flex-1 flex flex-col items-center justify-center relative">
+                 {/* Visualizer Background Mockup */}
+                 <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+                     <div className="flex items-end gap-1 h-32">
+                         {[...Array(20)].map((_, i) => (
+                             <div key={i} className="w-2 bg-primary rounded-t-full" style={{ height: `${Math.random() * 100}%` }}></div>
+                         ))}
+                     </div>
+                 </div>
 
-            {isRecording && (
-                <div className="w-64 h-12 bg-gray-100 rounded-full flex items-center justify-center gap-1 mt-6">
-                    {[1,2,3,4,5,4,3,2,1].map((h, i) => (
-                        <div key={i} className="w-1 bg-primary rounded-full animate-bounce" style={{ height: `${h * 4}px`, animationDelay: `${i * 0.1}s` }}></div>
-                    ))}
-                </div>
-            )}
-         </div>
+                 <div className={`w-32 h-32 rounded-full flex items-center justify-center mb-8 transition-all duration-500 ${isRecording ? 'bg-red-100 scale-110 shadow-[0_0_0_15px_rgba(254,226,226,0.5)]' : 'bg-primary/10'}`}>
+                    <Icon name="mic" size={48} className={`transition-colors duration-300 ${isRecording ? 'text-red-500' : 'text-primary'}`} />
+                 </div>
+                 
+                 <h2 className="text-2xl font-bold mb-2 text-center">{isRecording ? 'Escuchando...' : 'Listo para grabar'}</h2>
+                 <p className="text-subtle mb-10 text-center max-w-xs mx-auto text-sm leading-relaxed">
+                    {isRecording 
+                        ? 'Habla con naturalidad. Analizaremos tu tono, claridad y ritmo en tiempo real.' 
+                        : 'Presiona el botón para comenzar tu sesión de práctica de ventas.'}
+                 </p>
+                 
+                 <button 
+                    onClick={() => setIsRecording(!isRecording)}
+                    className={`px-8 py-4 rounded-full font-bold text-lg shadow-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 ${
+                        isRecording 
+                        ? 'bg-red-500 text-white shadow-red-500/30' 
+                        : 'bg-primary text-white shadow-primary/30'
+                    }`}
+                >
+                    {isRecording ? <><Icon name="stop" /> Detener Grabación</> : <><Icon name="mic" /> Comenzar</>}
+                 </button>
+            </div>
+        </div>
     );
 };
 
 const Objections = () => {
+    const navigate = useNavigate();
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-text">Manejador de Objeciones</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 md:p-8 pb-24 md:pb-8">
+            <header className="flex items-center mb-6">
+                 <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                 <h1 className="text-2xl font-bold">Manejo de Objeciones</h1>
+            </header>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {MOCK_OBJECTIONS.map(obj => (
-                    <div key={obj.id} className="bg-surface p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
-                        <div className="flex items-start gap-4">
-                            <div className="p-3 bg-secondary/10 rounded-lg text-secondary group-hover:bg-secondary group-hover:text-white transition-colors">
-                                <Icon name={obj.icon} size={24} />
+                    <div key={obj.id} className="bg-surface p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="p-3 bg-gray-50 rounded-xl group-hover:bg-primary/10 transition-colors">
+                                <Icon name={obj.icon} className="text-gray-600 group-hover:text-primary transition-colors" size={24}/>
                             </div>
-                            <div>
-                                <span className="text-xs font-bold text-subtle uppercase tracking-wider">{obj.category}</span>
-                                <h3 className="font-bold text-lg mb-2 text-text">{obj.title}</h3>
-                                <p className="text-sm text-subtle line-clamp-2">{obj.response}</p>
-                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider bg-gray-100 text-subtle px-2 py-1 rounded-md">{obj.category}</span>
+                        </div>
+                        <h3 className="font-bold text-lg mb-2 text-text">{obj.title}</h3>
+                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                             <p className="text-sm text-subtle italic leading-relaxed">"{obj.response}"</p>
+                        </div>
+                        <div className="mt-4 flex items-center text-primary font-bold text-sm">
+                            <span>Practicar respuesta</span>
+                            <Icon name="arrow_forward" size={16} className="ml-1" />
                         </div>
                     </div>
                 ))}
@@ -951,38 +1188,70 @@ const Objections = () => {
 };
 
 const Settings = () => {
+    const navigate = useNavigate();
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-2xl mx-auto">
-            <h1 className="text-2xl font-bold mb-6 text-text">Ajustes</h1>
-            <div className="bg-surface rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 cursor-pointer">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-lg"><Icon name="person" className="text-text"/></div>
-                        <div>
-                            <p className="font-bold text-text">Perfil</p>
-                            <p className="text-xs text-subtle">Editar información personal</p>
+        <div className="p-4 md:p-8 pb-24 md:pb-8">
+            <header className="flex items-center mb-6">
+                 <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary md:hidden"><Icon name="arrow_back" /></button>
+                 <h1 className="text-2xl font-bold">Ajustes</h1>
+            </header>
+            
+            <div className="max-w-xl mx-auto space-y-6">
+                <section>
+                    <h2 className="text-sm font-bold text-subtle uppercase mb-3 ml-2">General</h2>
+                    <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div className="p-4 flex justify-between items-center border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><Icon name="notifications" size={20}/></div>
+                                <span className="font-medium">Notificaciones Push</span>
+                            </div>
+                            <Toggle checked={true} onChange={() => {}} />
+                        </div>
+                        <div className="p-4 flex justify-between items-center border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-50 rounded-lg text-purple-600"><Icon name="dark_mode" size={20}/></div>
+                                <span className="font-medium">Modo Oscuro</span>
+                            </div>
+                            <Toggle checked={false} onChange={() => {}} />
+                        </div>
+                        <div className="p-4 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-green-50 rounded-lg text-green-600"><Icon name="language" size={20}/></div>
+                                <span className="font-medium">Idioma</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-subtle cursor-pointer">
+                                <span className="text-sm">Español</span>
+                                <Icon name="chevron_right" size={20} />
+                            </div>
                         </div>
                     </div>
-                    <Icon name="chevron_right" className="text-gray-400" />
-                </div>
-                 <div className="p-4 border-b border-gray-100 flex items-center justify-between hover:bg-gray-50 cursor-pointer">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gray-100 rounded-lg"><Icon name="notifications" className="text-text"/></div>
-                        <div>
-                            <p className="font-bold text-text">Notificaciones</p>
-                            <p className="text-xs text-subtle">Gestionar alertas</p>
-                        </div>
-                    </div>
-                    <Icon name="chevron_right" className="text-gray-400" />
-                </div>
-                 <div className="p-4 flex items-center justify-between hover:bg-red-50 cursor-pointer">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 rounded-lg"><Icon name="logout" className="text-red-500" /></div>
-                        <div>
-                            <p className="font-bold text-red-500">Cerrar Sesión</p>
-                        </div>
-                    </div>
-                </div>
+                </section>
+
+                <section>
+                     <h2 className="text-sm font-bold text-subtle uppercase mb-3 ml-2">Cuenta</h2>
+                     <div className="bg-surface rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                        <button onClick={() => navigate('/profile')} className="w-full p-4 flex justify-between items-center border-b border-gray-100 hover:bg-gray-50 text-left">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-orange-50 rounded-lg text-orange-600"><Icon name="person" size={20}/></div>
+                                <span className="font-medium">Editar Perfil</span>
+                            </div>
+                            <Icon name="chevron_right" className="text-gray-300" size={20} />
+                        </button>
+                         <button className="w-full p-4 flex justify-between items-center hover:bg-gray-50 text-left">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-gray-100 rounded-lg text-gray-600"><Icon name="lock" size={20}/></div>
+                                <span className="font-medium">Privacidad y Seguridad</span>
+                            </div>
+                            <Icon name="chevron_right" className="text-gray-300" size={20} />
+                        </button>
+                     </div>
+                </section>
+
+                <button onClick={() => navigate('/login')} className="w-full bg-red-50 text-red-600 py-4 rounded-xl font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2">
+                    <Icon name="logout" size={20} /> Cerrar Sesión
+                </button>
+                
+                <p className="text-center text-xs text-subtle mt-4">Versión 1.0.2 • PerfectCall AI</p>
             </div>
         </div>
     );
@@ -1010,6 +1279,8 @@ const App = () => {
                         <Route path="/analysis" element={<CallHistoryPage />} />
                         <Route path="/objections" element={<Objections />} />
                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/subscription/success" element={<SubscriptionSuccessPage />} />
                         <Route path="/admin" element={<AdminPage />} />
                     </Routes>
                     <BottomNav />
