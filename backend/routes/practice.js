@@ -174,14 +174,44 @@ Responde SOLO con JSON válido:
 
     await session.save();
 
-    // Actualizar estadísticas del usuario
+    // Actualizar estadísticas del usuario y Racha (Streak)
     const User = require('../models/User');
+    const user = await User.findById(req.userId);
     const userSessions = await PracticeSession.find({ userId: req.userId });
     const averageScore = userSessions.reduce((sum, s) => sum + s.analysis.score, 0) / userSessions.length;
 
+    // Lógica de Racha
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    let newStreak = user.stats.streak || 0;
+    let lastPractice = user.stats.lastPracticeDate ? new Date(user.stats.lastPracticeDate) : null;
+    
+    if (lastPractice) {
+        lastPractice.setHours(0, 0, 0, 0);
+        const diffTime = Math.abs(today - lastPractice);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+
+        if (diffDays === 1) {
+            // Practicó ayer, incrementa racha
+            newStreak += 1;
+        } else if (diffDays > 1) {
+            // Rompió la racha, reinicia
+            newStreak = 1;
+        }
+        // Si diffDays === 0 (practicó hoy), no cambia la racha
+    } else {
+        // Primera práctica
+        newStreak = 1;
+    }
+
     await User.findByIdAndUpdate(req.userId, {
       $inc: { 'stats.totalPractices': 1 },
-      $set: { 'stats.averageScore': Math.round(averageScore) }
+      $set: { 
+          'stats.averageScore': Math.round(averageScore),
+          'stats.streak': newStreak,
+          'stats.lastPracticeDate': new Date()
+      }
     });
 
     res.json({
@@ -195,7 +225,8 @@ Responde SOLO con JSON válido:
         feedback: session.feedback,
         clipDescriptions: session.clipDescriptions,
         metrics: session.metrics,
-        createdAt: session.createdAt
+        createdAt: session.createdAt,
+        newStreak // Devolvemos la nueva racha para animaciones en frontend
       }
     });
 

@@ -78,7 +78,9 @@ const userSchema = new mongoose.Schema({
     totalPitches: { type: Number, default: 0 },
     totalPractices: { type: Number, default: 0 },
     totalLeads: { type: Number, default: 0 },
-    averageScore: { type: Number, default: 0 }
+    averageScore: { type: Number, default: 0 },
+    streak: { type: Number, default: 0 },
+    lastPracticeDate: { type: Date, default: null }
   },
   createdAt: {
     type: Date,

@@ -12,9 +12,10 @@ export interface Scenario {
 export interface Objection {
     id: number;
     title: string;
-    category: 'Precio' | 'Tiempo' | 'Competencia' | 'Necesidad' | 'Autoridad';
+    category: string; // Changed from enum to string to support flexible input
     response: string;
     icon: string;
+    description?: string; // Added description
 }
 
 export interface TrainingSession {
@@ -31,7 +32,8 @@ export interface Lead {
     position: string;
     email: string;
     phone: string;
-    status: 'Nuevo' | 'Contactado' | 'Reunión' | 'Propuesta' | 'Ganado' | 'Perdido';
+    avatar?: string;
+    status: 'Nuevo' | 'Contactado' | 'Reunión' | 'Propuesta' | 'Negociación' | 'Ganado' | 'Perdido';
     priority: 'Alta' | 'Media' | 'Baja';
     value: number;
     nextFollowUp?: string;
@@ -74,4 +76,13 @@ export interface Pitch {
     url?: string;
     isFavorite: boolean;
     date: string;
+    status?: 'draft' | 'active' | 'archived' | 'pending_review' | 'reviewed'; // Added status
+}
+
+export interface UserStats {
+    totalPitches: number;
+    totalPractices: number;
+    totalLeads: number;
+    averageScore: number;
+    streak?: number;
 }

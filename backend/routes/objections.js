@@ -23,10 +23,11 @@ router.get('/', authMiddleware, async (req, res) => {
 
     // Agrupar por categoría
     const grouped = objections.reduce((acc, obj) => {
-      if (!acc[obj.category]) {
-        acc[obj.category] = [];
+      const cat = obj.category || 'Sin categoría';
+      if (!acc[cat]) {
+        acc[cat] = [];
       }
-      acc[obj.category].push(obj);
+      acc[cat].push(obj);
       return acc;
     }, {});
 
@@ -122,19 +123,30 @@ router.post('/', authMiddleware, async (req, res) => {
       isPublic
     } = req.body;
 
-    if (!title || !description || !category) {
+    if (!title) {
       return res.status(400).json({
         success: false,
-        message: 'Título, descripción y categoría son requeridos'
+        message: 'El título es requerido'
+      });
+    }
+
+    // Process responses to ensure they match the schema structure
+    let processedResponses = [];
+    if (Array.isArray(responses)) {
+      processedResponses = responses.map(r => {
+        if (typeof r === 'string') {
+          return { content: r };
+        }
+        return r;
       });
     }
 
     const objection = new Objection({
       userId: req.userId,
       title,
-      description,
-      category,
-      responses: responses || [],
+      description: description || '',
+      category: category || 'General',
+      responses: processedResponses,
       examples: examples || [],
       tags: tags || [],
       difficulty: difficulty || 'media',
@@ -182,7 +194,14 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     allowedFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        objection[field] = req.body[field];
+        if (field === 'responses' && Array.isArray(req.body[field])) {
+           objection[field] = req.body[field].map(r => {
+             if (typeof r === 'string') return { content: r };
+             return r;
+           });
+        } else {
+           objection[field] = req.body[field];
+        }
       }
     });
 
@@ -333,8 +352,8 @@ router.get('/stats/summary', authMiddleware, async (req, res) => {
     let totalSuccessful = 0;
 
     userObjections.forEach(obj => {
-      // Por categoría
-      byCategory[obj.category] = (byCategory[obj.category] || 0) + 1;
+      const cat = obj.category || 'Sin categoría';
+      byCategory[cat] = (byCategory[cat] || 0) + 1;
       
       // Por dificultad
       byDifficulty[obj.difficulty] = (byDifficulty[obj.difficulty] || 0) + 1;

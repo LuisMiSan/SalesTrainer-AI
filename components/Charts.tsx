@@ -165,30 +165,33 @@ export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, conf
                     {
                         label: 'Confianza',
                         data: confidenceData,
-                        borderColor: '#2C3E50', // Dark Blue (Screenshot match)
-                        backgroundColor: '#2C3E50',
-                        borderWidth: 4,
+                        borderColor: '#4ADE80', // Green-400
+                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        borderWidth: 3,
                         tension: 0.4,
+                        fill: true,
                         pointRadius: 0,
                         pointHoverRadius: 6
                     },
                     {
                         label: 'Claridad',
                         data: clarityData,
-                        borderColor: '#2ECC71', // Green (Screenshot match)
-                        backgroundColor: '#2ECC71',
-                        borderWidth: 4,
+                        borderColor: '#60A5FA', // Blue-400
+                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        borderWidth: 3,
                         tension: 0.4,
+                        fill: true,
                         pointRadius: 0,
                         pointHoverRadius: 6
                     },
                     {
                         label: 'Empatía',
                         data: empathyData,
-                        borderColor: '#3498DB', // Light Blue (Screenshot match)
-                        backgroundColor: '#3498DB',
-                        borderWidth: 4,
+                        borderColor: '#FBBF24', // Amber-400
+                        backgroundColor: 'rgba(251, 191, 36, 0.1)',
+                        borderWidth: 3,
                         tension: 0.4,
+                        fill: true,
                         pointRadius: 0,
                         pointHoverRadius: 6
                     }
@@ -198,7 +201,17 @@ export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, conf
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
+                    legend: { 
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 8,
+                            padding: 20,
+                            font: { family: 'Manrope', size: 12 },
+                            color: '#617C89'
+                        }
+                    },
                     tooltip: { 
                         mode: 'index',
                         intersect: false,
@@ -214,14 +227,16 @@ export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, conf
                 },
                 scales: {
                     y: { 
-                        display: false, 
+                        display: true, 
                         min: 40,
-                        max: 100 
+                        max: 100,
+                        grid: { color: 'rgba(0,0,0,0.05)' },
+                        ticks: { font: { size: 10 }, color: '#94A3B8' }
                     },
                     x: { 
                         grid: { display: false }, 
                         border: { display: false },
-                        ticks: { display: false }
+                        ticks: { font: { size: 10 }, color: '#94A3B8' }
                     }
                 },
                 interaction: {

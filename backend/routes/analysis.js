@@ -139,6 +139,7 @@ router.post('/website', authMiddleware, async (req, res) => {
       title: `Pitch para ${aiResult.analysis.companyName || 'Empresa'}`,
       content: aiResult.pitch,
       originalUrl: url,
+      source: 'web',
       analysis: aiResult.analysis
     });
 
@@ -168,6 +169,83 @@ router.post('/website', authMiddleware, async (req, res) => {
       success: false,
       message: error.message || 'Error al analizar el sitio web',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// POST /api/analysis/manual - Generar pitch desde datos manuales
+router.post('/manual', authMiddleware, async (req, res) => {
+  try {
+    const { companyName, product, audience, details } = req.body;
+
+    if (!companyName || !product) {
+      return res.status(400).json({
+        success: false,
+        message: 'Nombre de empresa y producto son requeridos'
+      });
+    }
+
+    // Simulación de análisis IA para entrada manual
+    // En producción, esto se enviaría a la API de Claude/OpenAI
+    const pitchContent = `
+# Estrategia de Ventas para ${companyName}
+
+**Apertura:**
+"Hola, mi nombre es [Nombre] de ${companyName}. Ayudamos a empresas que buscan mejorar su ${product}..."
+
+**Propuesta de Valor:**
+"Entendemos que ${audience} enfrentan desafíos únicos. Nuestra solución está diseñada específicamente para..."
+
+**Cuerpo del Discurso:**
+${details ? `Considerando que mencionaste: "${details}", ` : ''} nuestra tecnología permite optimizar procesos y reducir costos operativos un 20% en el primer trimestre.
+
+**Cierre:**
+"¿Tendría 10 minutos esta semana para una breve demostración?"
+    `.trim();
+
+    const analysis = {
+      companyName,
+      mainProduct: product,
+      targetAudience: audience,
+      keyBenefits: ['Personalización', 'Eficiencia', 'Escalabilidad'],
+      painPoints: ['Procesos manuales', 'Falta de visibilidad'],
+      uniqueValue: 'Solución integral adaptada al sector'
+    };
+
+    const pitch = new Pitch({
+      userId: req.userId,
+      title: `Pitch Manual: ${companyName}`,
+      content: pitchContent,
+      source: 'manual',
+      analysis,
+      originalUrl: null
+    });
+
+    await pitch.save();
+
+    // Actualizar estadísticas del usuario
+    await User.findByIdAndUpdate(req.userId, {
+      $inc: { 'stats.totalPitches': 1 }
+    });
+
+    res.json({
+      success: true,
+      message: 'Pitch generado exitosamente',
+      pitch: {
+        id: pitch._id,
+        title: pitch.title,
+        content: pitch.content,
+        analysis: pitch.analysis,
+        createdAt: pitch.createdAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error generando pitch manual:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al generar el pitch',
+      error: error.message
     });
   }
 });

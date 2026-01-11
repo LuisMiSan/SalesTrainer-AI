@@ -20,6 +20,11 @@ const pitchSchema = new mongoose.Schema({
     type: String,
     required: [true, 'El contenido del pitch es requerido']
   },
+  source: {
+    type: String,
+    enum: ['web', 'manual'],
+    default: 'web'
+  },
   originalUrl: {
     type: String,
     trim: true
@@ -70,7 +75,7 @@ const pitchSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'active', 'archived'],
+    enum: ['draft', 'active', 'archived', 'pending_review', 'reviewed'],
     default: 'active'
   },
   createdAt: {

@@ -4,6 +4,8 @@ const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 const User = require('../models/User');
 const Meeting = require('../models/Meeting');
 const Pitch = require('../models/Pitch');
+const Objection = require('../models/Objection');
+const Lead = require('../models/Lead');
 
 // Middleware to ensure user is admin for all routes in this file
 // router.use(authMiddleware, adminMiddleware); 
@@ -20,19 +22,44 @@ router.get('/stats', async (req, res) => {
     const newUsers = await User.countDocuments({ createdAt: { $gte: thirtyDaysAgo } });
     
     const totalPitches = await Pitch.countDocuments();
+    const pendingPitches = await Pitch.countDocuments({ status: 'pending_review' });
+
     // Count completed meetings with analysis
     const totalAnalyzedMeetings = await Meeting.countDocuments({ 
         status: 'completada', 
         'analysis.score': { $exists: true } 
     });
     
+    const totalObjections = await Objection.countDocuments();
+
+    // Calculate simulated global performance for dashboard widgets
+    // In production this would aggregate real data
+    const globalPerformance = {
+        coldCalls: totalUsers * 12, // Simulated avg
+        conversionRate: 18,
+        avgClosingTime: 21,
+        dailyActivity: [120, 150, 180, 140, 160, 90, 45]
+    };
+
+    // Simulated Global Skill Trends
+    const globalSkillTrends = {
+        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+        confidence: [60, 65, 70, 75],
+        clarity: [55, 60, 68, 72],
+        empathy: [65, 68, 70, 74]
+    };
+
     res.json({
       success: true,
       stats: {
         totalUsers,
         newUsers,
         totalPitches,
-        totalSessions: totalAnalyzedMeetings
+        pendingPitches,
+        totalSessions: totalAnalyzedMeetings,
+        totalObjections,
+        globalPerformance,
+        globalSkillTrends
       }
     });
   } catch (error) {
@@ -262,9 +289,10 @@ router.get('/users/:id/pitches', async (req, res) => {
 
         const history = pitches.map(p => ({
             id: p._id,
-            url: p.originalUrl || 'N/A',
+            url: p.source === 'manual' ? 'Entrada Manual' : (p.originalUrl || 'N/A'),
             date: new Date(p.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }),
-            title: p.title
+            title: p.title,
+            status: p.status
         }));
 
         res.json({
@@ -279,6 +307,75 @@ router.get('/users/:id/pitches', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching user pitches:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// GET /api/admin/objections - Get list of objections
+router.get('/objections', async (req, res) => {
+    try {
+        const { limit = 50, page = 1, search } = req.query;
+        const query = {};
+
+        if (search) {
+            query.title = { $regex: search, $options: 'i' };
+        }
+
+        const objections = await Objection.find(query)
+            .populate('userId', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit))
+            .skip((parseInt(page) - 1) * parseInt(limit));
+
+        const total = await Objection.countDocuments(query);
+
+        res.json({
+            success: true,
+            objections,
+            pagination: {
+                total,
+                page: parseInt(page),
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching admin objections:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// GET /api/admin/leads - Get list of system-wide leads
+router.get('/leads', async (req, res) => {
+    try {
+        const { limit = 50, page = 1, search } = req.query;
+        const query = {};
+
+        if (search) {
+            query.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { 'company.name': { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        const leads = await Lead.find(query)
+            .populate('userId', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit))
+            .skip((parseInt(page) - 1) * parseInt(limit));
+
+        const total = await Lead.countDocuments(query);
+
+        res.json({
+            success: true,
+            leads,
+            pagination: {
+                total,
+                page: parseInt(page),
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching admin leads:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });

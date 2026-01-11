@@ -3,6 +3,7 @@ const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const Lead = require('../models/Lead');
 const User = require('../models/User');
+const mongoose = require('mongoose'); // Added mongoose import
 
 // POST /api/leads - Crear nuevo lead
 router.post('/', authMiddleware, async (req, res) => {
@@ -11,6 +12,7 @@ router.post('/', authMiddleware, async (req, res) => {
       name,
       email,
       phone,
+      avatar,
       company,
       position,
       status,
@@ -34,6 +36,7 @@ router.post('/', authMiddleware, async (req, res) => {
       name,
       email,
       phone,
+      avatar,
       company,
       position,
       status: status || 'nuevo',
@@ -181,7 +184,7 @@ router.put('/:id', authMiddleware, async (req, res) => {
 
     // Actualizar campos permitidos
     const allowedFields = [
-      'name', 'email', 'phone', 'company', 'position',
+      'name', 'email', 'phone', 'avatar', 'company', 'position',
       'status', 'priority', 'source', 'estimatedValue',
       'tags', 'nextFollowUp', 'customFields'
     ];
@@ -309,19 +312,19 @@ router.get('/stats/dashboard', authMiddleware, async (req, res) => {
 
     // Leads por estado
     const leadsByStatus = await Lead.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       { $group: { _id: '$status', count: { $sum: 1 } } }
     ]);
 
     // Leads por prioridad
     const leadsByPriority = await Lead.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       { $group: { _id: '$priority', count: { $sum: 1 } } }
     ]);
 
     // Valor total estimado
     const totalValue = await Lead.aggregate([
-      { $match: { userId: mongoose.Types.ObjectId(userId) } },
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
       { $group: { _id: null, total: { $sum: '$estimatedValue' } } }
     ]);
 
@@ -334,6 +337,36 @@ router.get('/stats/dashboard', authMiddleware, async (req, res) => {
       .limit(5)
       .select('name company nextFollowUp status');
 
+    // Simulated Business Performance
+    const performance = {
+        coldCalls: 152,
+        conversionRate: 23,
+        avgClosingTime: 14,
+        dailyActivity: [30, 45, 25, 60, 75, 40, 20]
+    };
+
+    // Simulated Skill Trends for the Line Chart
+    const skillTrends = {
+        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+        confidence: [50, 55, 50, 85, 90, 80, 85],
+        clarity: [50, 55, 65, 75, 50, 55, 70],
+        empathy: [50, 50, 50, 50, 55, 60, 70]
+    };
+
+    // Weekly Achievements
+    const achievements = [
+        {
+            icon: 'military_tech',
+            title: '¡Top 10 en Claridad!',
+            description: 'Tu puntuación de claridad está en el ranking.'
+        },
+        {
+            icon: 'trending_up',
+            title: 'Mejora notable en Empatía',
+            description: '+15% vs la semana pasada.'
+        }
+    ];
+
     res.json({
       success: true,
       stats: {
@@ -341,7 +374,10 @@ router.get('/stats/dashboard', authMiddleware, async (req, res) => {
         leadsByStatus,
         leadsByPriority,
         totalEstimatedValue: totalValue[0]?.total || 0,
-        upcomingFollowUps
+        upcomingFollowUps,
+        performance,
+        skillTrends,
+        achievements
       }
     });
 

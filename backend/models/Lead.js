@@ -20,6 +20,10 @@ const leadSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  avatar: {
+    type: String,
+    default: null
+  },
   company: {
     name: {
       type: String,

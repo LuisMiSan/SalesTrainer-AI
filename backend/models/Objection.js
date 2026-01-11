@@ -13,13 +13,13 @@ const objectionSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: [true, 'La descripción es requerida']
+    required: false,
+    default: ''
   },
   category: {
     type: String,
-    required: [true, 'La categoría es requerida'],
-    enum: ['precio', 'necesidad', 'tiempo', 'competencia', 'presupuesto', 'indecisión', 'autoridad', 'otro'],
-    default: 'otro'
+    required: false, // Changed to false as it is optional in UI
+    default: 'General'
   },
   responses: [{
     title: String,
