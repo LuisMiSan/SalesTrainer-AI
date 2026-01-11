@@ -1,12 +1,22 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { api } from '../utils/api';
 
+interface UserStats {
+  totalPitches: number;
+  totalPractices: number;
+  totalLeads: number;
+  averageScore: number;
+  streak?: number;
+  lastPracticeDate?: string;
+}
+
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
   avatar?: string;
+  stats?: UserStats;
 }
 
 interface AuthContextType {

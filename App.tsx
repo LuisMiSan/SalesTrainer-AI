@@ -83,14 +83,6 @@ const HISTORY_DATA = [
     }
 ];
 
-const PITCH_HISTORY_DATA = [
-    { id: 1, url: "www.example.com", date: "15 de Enero, 2024", icon: "check_box", color: "bg-emerald-500 text-white" },
-    { id: 2, url: "www.another-example.com", date: "10 de Enero, 2024", icon: "diamond", color: "bg-gray-100 text-teal-600" },
-    { id: 3, url: "www.sales-pitch.com", date: "05 de Enero, 2024", icon: "mail", color: "bg-teal-700 text-white" },
-    { id: 4, url: "www.ai-powered-sales.com", date: "20 de Diciembre, 2023", icon: "verified", color: "bg-emerald-300 text-emerald-800" },
-    { id: 5, url: "www.lead-generation.com", date: "15 de Diciembre, 2023", icon: "expand_more", color: "bg-gray-100 text-gray-600" },
-];
-
 const CHART_DATA = {
     labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
     confidence: [50, 55, 50, 85, 90, 80, 85],
@@ -237,160 +229,93 @@ const Dashboard = () => {
     const streak = user?.stats?.streak || 5;
 
     return (
-        <div className="p-4 md:p-8 pb-24 md:pb-8 space-y-6 max-w-7xl mx-auto">
-            {/* Header */}
-            <header className="flex justify-between items-center bg-[#2C3E50] p-4 -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-6">
-                <div className="w-12"></div>
-                <h1 className="flex-1 text-center text-lg font-bold text-white">Dashboard</h1>
-                <div className="flex w-12 items-center justify-end">
-                    <button onClick={() => navigate('/settings')} className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full text-white hover:bg-white/10 transition-colors">
-                        <Icon name="settings" size={24} />
-                    </button>
-                </div>
-            </header>
-
-            {/* Welcome Card & Streak */}
-            <div className="bg-white rounded-2xl p-6 text-center shadow-sm border border-gray-100">
-                <div className="w-24 h-24 bg-[#E8DCC6] rounded-full mx-auto mb-4 flex items-center justify-center overflow-hidden">
-                     {/* Use user avatar or placeholder */}
-                     {user?.avatar ? (
-                         <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
-                     ) : (
-                         <span className="text-4xl">🌱</span>
-                     )}
-                </div>
-                <h2 className="text-xl font-bold text-[#2C3E50] mb-1">¡Hola de nuevo, {userName}!</h2>
-                <p className="text-gray-500">
-                    Tu racha de práctica es de <span className="font-bold text-[#3498DB]">{streak} días</span>. ¡Sigue así!
-                </p>
-            </div>
-
-            {/* Action Grid */}
-            <div className="grid grid-cols-2 gap-4">
-                <div onClick={() => navigate('/web-analysis')} className="bg-[#3498DB] p-6 rounded-2xl text-center text-white shadow-md cursor-pointer hover:scale-[1.02] transition-transform flex flex-col items-center justify-center gap-2">
-                    <Icon name="travel_explore" size={36} className="mx-auto" />
-                    <span className="text-sm font-bold">Iniciar Análisis</span>
-                </div>
-                <div onClick={() => navigate('/leads')} className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors flex flex-col items-center justify-center gap-2">
-                    <Icon name="group" size={36} className="text-[#3498DB] mx-auto" />
-                    <span className="text-sm font-bold text-[#2C3E50]">Leads Activos</span>
-                </div>
-                <div onClick={() => navigate('/web-history')} className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors flex flex-col items-center justify-center gap-2">
-                    <Icon name="pending_actions" size={36} className="text-[#3498DB] mx-auto" />
-                    <span className="text-sm font-bold text-[#2C3E50]">Pitches Pendientes</span>
-                </div>
-                <div onClick={() => navigate('/practice')} className="bg-white p-6 rounded-2xl text-center shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors flex flex-col items-center justify-center gap-2">
-                    <Icon name="checklist" size={36} className="text-[#2ECC71] mx-auto" />
-                    <span className="text-sm font-bold text-[#2C3E50]">Práctica Diaria</span>
-                </div>
-            </div>
-
-            {/* General Performance Summary with Evolution Chart & Achievements */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-base font-bold text-[#2C3E50]">Resumen de Rendimiento General</h3>
-                    <Link to="/analysis" className="text-sm font-medium text-[#3498DB] hover:underline">Semanal</Link>
-                </div>
-                
-                {/* Chart Area */}
-                <div className="h-64 relative mb-6">
-                    <EvolutionLineChart 
-                        labels={CHART_DATA.labels}
-                        confidenceData={CHART_DATA.confidence}
-                        clarityData={CHART_DATA.clarity}
-                        empathyData={CHART_DATA.empathy}
-                    />
-                    <div className="flex justify-center gap-4 mt-2">
-                        <div className="flex items-center gap-1 text-xs text-subtle">
-                            <span className="w-3 h-3 rounded-full bg-[#4ADE80] border-2 border-white shadow-sm"></span> Confianza
+        <div className="relative flex h-auto min-h-screen w-full flex-col justify-between overflow-x-hidden bg-background-light dark:bg-background-dark">
+            <div className="flex-grow">
+                <header className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark">
+                    <div className="w-12"></div>
+                    <h1 className="flex-1 text-center text-lg font-bold text-foreground-light dark:text-foreground-dark">Dashboard</h1>
+                    <div className="flex w-12 items-center justify-end">
+                        <button 
+                            onClick={() => navigate('/settings')}
+                            className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-full text-foreground-light dark:text-foreground-dark"
+                        >
+                            <span className="material-symbols-outlined text-2xl">settings</span>
+                        </button>
+                    </div>
+                </header>
+                <main className="px-4 pb-8">
+                    <div className="mb-6 rounded-2xl bg-primary/10 dark:bg-primary/20 p-6 text-center">
+                        <img 
+                            alt="Ilustración amigable" 
+                            className="mx-auto mb-4 h-24 w-24 rounded-full object-cover" 
+                            src={user?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuCTH06CJ2bT5pJ3yiGSjgBwSdfzWODhxLIP7txr__98phd9JQiyqM2zSPB5WuOunRzE6B4P85BcfNK-h_rysXPgcGClE5fBefW5qseuIZbojQvu6ozRumwnH0ZsSau-xiZOfVpA23MGqpt5jNI8euHxOKITXVYi_0mA67gz4SP5GIzfPepzycvmqklmy1HbXN8SVxO4n5Dk-oqvUGQFsBKabofg5sAaNYYScPQaal8qcRL3-D9CQ-bv7qx-9QFwZlk-Yfv8TqKEUIc9"}
+                        />
+                        <h2 className="text-xl font-bold text-foreground-light dark:text-foreground-dark">¡Hola de nuevo!</h2>
+                        <p className="text-subtle-light dark:text-subtle-dark">
+                            Tu racha de práctica es de <span className="font-bold text-primary">{streak} días</span>. ¡Sigue así!
+                        </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                        <div onClick={() => navigate('/web-analysis')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
+                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">travel_explore</span>
+                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Iniciar Análisis</h3>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-subtle">
-                            <span className="w-3 h-3 rounded-full bg-[#60A5FA] border-2 border-white shadow-sm"></span> Claridad
+                        <div onClick={() => navigate('/leads')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
+                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">groups</span>
+                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Leads Activos</h3>
                         </div>
-                        <div className="flex items-center gap-1 text-xs text-subtle">
-                            <span className="w-3 h-3 rounded-full bg-[#FBBF24] border-2 border-white shadow-sm"></span> Empatía
+                        <div onClick={() => navigate('/web-history')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
+                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">pending_actions</span>
+                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Pitches Pendientes</h3>
+                        </div>
+                        <div onClick={() => navigate('/practice')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
+                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">checklist</span>
+                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Práctica Diaria</h3>
                         </div>
                     </div>
-                </div>
 
-                {/* Achievements */}
-                <h4 className="text-sm font-bold text-[#2C3E50] mb-3">Logros de la Semana</h4>
-                <div className="space-y-3">
-                    <div className="flex items-center gap-3 bg-[#3498DB]/10 p-3 rounded-xl">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3498DB] text-white">
-                            <Icon name="military_tech" size={20} />
+                    <div className="mt-6 rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base font-bold text-foreground-light dark:text-foreground-dark">Progreso Semanal</h3>
+                            <Link to="/analysis" className="text-sm font-medium text-primary">Detalles</Link>
                         </div>
-                        <div>
-                            <p className="text-sm font-bold text-[#2C3E50]">¡Top 10 en Claridad!</p>
-                            <p className="text-xs text-subtle">Tu puntuación de claridad está en el ranking.</p>
+                        <div className="h-48">
+                             {/* Reusing existing WeeklyBarChart or similar logic, assuming updated chart styling happens inside component or global CSS */}
+                            <WeeklyBarChart 
+                                labels={['Confianza', 'Claridad', 'Empatía']}
+                                data={[75, 88, 82]}
+                            />
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 bg-[#3498DB]/10 p-3 rounded-xl">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#3498DB] text-white">
-                            <Icon name="trending_up" size={20} />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-[#2C3E50]">Mejora notable en Empatía</p>
-                            <p className="text-xs text-subtle">+15% vs la semana pasada.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            {/* Active Leads */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-base font-bold text-[#2C3E50]">Leads Activos</h3>
-                    <Link to="/leads" className="text-sm font-medium text-[#3498DB] hover:underline">Ver todos</Link>
-                </div>
-                <div className="space-y-4">
-                    {MOCK_LEADS.slice(0, 3).map((lead) => (
-                        <div key={lead.id} className="flex items-center justify-between cursor-pointer" onClick={() => navigate('/leads')}>
-                            <div className="flex items-center gap-3">
-                                <img 
-                                    alt={lead.name} 
-                                    className="h-10 w-10 rounded-full object-cover" 
-                                    src={lead.avatar || `https://ui-avatars.com/api/?name=${lead.name}&background=random`} 
-                                />
-                                <div>
-                                    <p className="font-medium text-[#2C3E50]">{lead.name}</p>
-                                    <div className="flex items-center gap-2 text-sm text-subtle">
-                                        <span className={`inline-block h-2 w-2 rounded-full ${getStatusColor(lead.status).split(' ')[1]}`}></span>
-                                        <span>{lead.status === 'Propuesta' ? 'Propuesta' : lead.status === 'Contactado' ? 'Contacto' : lead.status}</span>
+                    <div className="mt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-base font-bold text-foreground-light dark:text-foreground-dark">Leads Recientes</h3>
+                            <Link to="/leads" className="text-sm font-medium text-primary">Ver todos</Link>
+                        </div>
+                        <div className="space-y-4">
+                             {MOCK_LEADS.slice(0, 2).map((lead) => (
+                                <div key={lead.id} className="flex items-center justify-between cursor-pointer" onClick={() => navigate('/leads')}>
+                                    <div className="flex items-center gap-3">
+                                        <img 
+                                            alt={lead.name} 
+                                            className="h-10 w-10 rounded-full object-cover" 
+                                            src={lead.avatar || `https://ui-avatars.com/api/?name=${lead.name}&background=random`} 
+                                        />
+                                        <div>
+                                            <p className="font-medium text-foreground-light dark:text-foreground-dark">{lead.name}</p>
+                                            <p className="text-sm text-subtle-light dark:text-subtle-dark">
+                                                {lead.status === 'Propuesta' ? 'Propuesta enviada' : 'Primer contacto'}
+                                            </p>
+                                        </div>
                                     </div>
+                                    <span className="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark">chevron_right</span>
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm text-subtle">{lead.nextFollowUp}</p>
-                                <Icon name="chevron_right" size={20} className="text-gray-400 mt-1 ml-auto" />
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Pending Pitches (Updated Design) */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-base font-bold text-[#2C3E50]">Pitches Pendientes</h3>
-                    <span className="text-2xl font-bold text-[#3498DB]">{MOCK_PENDING_PITCHES.length}</span>
-                </div>
-                <p className="text-sm text-subtle mb-4">Pitches que requieren tu atención.</p>
-                <div className="space-y-3">
-                    {MOCK_PENDING_PITCHES.map((pitch) => (
-                        <div key={pitch.id} className="flex items-center justify-between cursor-pointer group" onClick={() => navigate('/web-history')}>
-                            <div>
-                                <p className="font-medium text-[#2C3E50] text-sm group-hover:text-[#3498DB] transition-colors">{pitch.title}</p>
-                                <p className="text-xs text-subtle">
-                                    {pitch.status === 'pending_review' ? 'Pendiente de revisión' : 'Feedback recibido'}
-                                </p>
-                            </div>
-                            <button className="flex h-8 w-8 items-center justify-center rounded-full text-subtle hover:bg-gray-100 hover:text-[#3498DB]">
-                                <Icon name="chevron_right" size={20} />
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                    </div>
+                </main>
             </div>
         </div>
     );
@@ -460,7 +385,12 @@ const AdminPage = () => {
                         onClick={() => setActiveTab(tab)}
                         className={`pb-2 px-4 font-bold text-sm capitalize whitespace-nowrap transition-colors border-b-2 ${activeTab === tab ? 'text-primary border-primary' : 'text-subtle border-transparent hover:text-text'}`}
                     >
-                        {tab === 'dashboard' ? 'General' : tab === 'users' ? 'Usuarios' : tab === 'objections' ? 'Leads'}
+                        {
+                            tab === 'dashboard' ? 'General' : 
+                            tab === 'users' ? 'Usuarios' : 
+                            tab === 'objections' ? 'Objeciones' : 
+                            'Leads'
+                        }
                     </button>
                 ))}
             </div>

@@ -6,42 +6,43 @@ export const BottomNav: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Matching the Screenshot bottom nav structure
-    // Inicio, Crear, Historial, Perfil
+    // Matching the provided Screenshot footer structure:
+    // Dashboard (Home), Leads (Group), Crear Pitch (Add Box), Análisis (Analytics)
     const tabs = [
-        { id: 'home', icon: 'home', label: 'Inicio', path: '/dashboard' },
-        { id: 'create', icon: 'add_box', label: 'Crear', path: '/web-analysis' },
-        { id: 'history', icon: 'history', label: 'Historial', path: '/web-history' },
-        { id: 'profile', icon: 'person', label: 'Perfil', path: '/profile' },
+        { id: 'home', icon: 'home', label: 'Dashboard', path: '/dashboard' },
+        { id: 'leads', icon: 'group', label: 'Leads', path: '/leads' },
+        { id: 'create', icon: 'add_box', label: 'Crear Pitch', path: '/web-analysis' },
+        { id: 'analysis', icon: 'analytics', label: 'Análisis', path: '/analysis' },
     ];
 
     if (location.pathname === '/' || location.pathname === '/login') return null;
 
     return (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-gray-100 pb-safe z-50">
-            <div className="flex justify-around items-center h-16 px-2">
+        <footer className="md:hidden fixed bottom-0 left-0 right-0 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-sm border-t border-primary/10 dark:border-primary/20 pb-safe z-50">
+            <nav className="flex justify-around items-center h-16 px-2">
                 {tabs.map((tab) => {
-                    // Check active state more strictly for profile
                     const isActive = location.pathname.startsWith(tab.path);
-                    
                     return (
                         <button
                             key={tab.id}
                             onClick={() => navigate(tab.path)}
-                            className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                                isActive ? 'text-primary' : 'text-subtle'
+                            className={`flex flex-col items-center justify-end gap-1 w-full h-full ${
+                                isActive 
+                                    ? 'text-primary' 
+                                    : 'text-subtle-light dark:text-subtle-dark'
                             }`}
                         >
-                            <Icon 
-                                name={tab.icon} 
-                                filled={isActive} 
-                                className={isActive ? 'text-primary' : 'text-subtle'}
-                            />
-                            <span className="text-[10px] font-medium">{tab.label}</span>
+                            <span 
+                                className="material-symbols-outlined text-2xl"
+                                style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                                {tab.icon}
+                            </span>
+                            <p className="text-xs font-medium">{tab.label}</p>
                         </button>
                     );
                 })}
-            </div>
-        </div>
+            </nav>
+        </footer>
     );
 };
