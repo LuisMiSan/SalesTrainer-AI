@@ -86,16 +86,17 @@ export const SkillsRadarChart: React.FC<RadarChartProps> = ({ scores }) => {
         const config: ChartConfiguration = {
             type: 'radar',
             data: {
+                // Labels matching the provided image explicitly
                 labels: ['Confianza', 'Claridad', 'Empatía', 'Persuasión', 'Tono'],
                 datasets: [{
-                    label: 'Actual',
+                    label: 'Habilidades',
                     data: scores,
-                    backgroundColor: 'rgba(19, 164, 236, 0.2)',
-                    borderColor: '#13a4ec',
-                    pointBackgroundColor: '#13a4ec',
+                    backgroundColor: 'rgba(56, 189, 248, 0.2)', // Light Blue fill
+                    borderColor: '#38bdf8', // Light Blue border
+                    pointBackgroundColor: '#38bdf8',
                     pointBorderColor: '#fff',
                     pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#13a4ec',
+                    pointHoverBorderColor: '#38bdf8',
                     borderWidth: 2,
                 }]
             },
@@ -107,17 +108,18 @@ export const SkillsRadarChart: React.FC<RadarChartProps> = ({ scores }) => {
                 },
                 scales: {
                     r: {
-                        angleLines: { display: false },
+                        angleLines: { display: true, color: '#f1f5f9' },
                         suggestedMin: 0,
                         suggestedMax: 100,
-                        ticks: { display: false },
-                        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                        ticks: { display: false, stepSize: 20 },
+                        grid: { color: '#e2e8f0' },
                         pointLabels: {
                             font: {
-                                size: 11,
-                                family: 'Manrope'
+                                size: 12,
+                                family: 'Manrope',
+                                weight: '500'
                             },
-                            color: '#617C89'
+                            color: '#1e293b' // Darker text for readability
                         }
                     }
                 }
@@ -165,33 +167,33 @@ export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, conf
                     {
                         label: 'Confianza',
                         data: confidenceData,
-                        borderColor: '#4ADE80', // Green-400
-                        backgroundColor: 'rgba(74, 222, 128, 0.1)',
+                        borderColor: '#22d3ee', // Cyan-400 (Matches image Blue-ish Cyan)
+                        backgroundColor: 'rgba(34, 211, 238, 0.1)',
                         borderWidth: 3,
                         tension: 0.4,
-                        fill: true,
+                        fill: false,
                         pointRadius: 0,
                         pointHoverRadius: 6
                     },
                     {
                         label: 'Claridad',
                         data: clarityData,
-                        borderColor: '#60A5FA', // Blue-400
-                        backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                        borderColor: '#34d399', // Emerald-400 (Matches image Green)
+                        backgroundColor: 'rgba(52, 211, 153, 0.1)',
                         borderWidth: 3,
                         tension: 0.4,
-                        fill: true,
+                        fill: false,
                         pointRadius: 0,
                         pointHoverRadius: 6
                     },
                     {
                         label: 'Empatía',
                         data: empathyData,
-                        borderColor: '#FBBF24', // Amber-400
+                        borderColor: '#fbbf24', // Amber-400 (Matches image Orange/Yellow)
                         backgroundColor: 'rgba(251, 191, 36, 0.1)',
                         borderWidth: 3,
                         tension: 0.4,
-                        fill: true,
+                        fill: false,
                         pointRadius: 0,
                         pointHoverRadius: 6
                     }
@@ -201,17 +203,7 @@ export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, conf
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { 
-                        display: true,
-                        position: 'bottom',
-                        labels: {
-                            usePointStyle: true,
-                            boxWidth: 8,
-                            padding: 20,
-                            font: { family: 'Manrope', size: 12 },
-                            color: '#617C89'
-                        }
-                    },
+                    legend: { display: false }, // Legend is custom rendered in parent to match UI
                     tooltip: { 
                         mode: 'index',
                         intersect: false,
@@ -228,13 +220,14 @@ export const EvolutionLineChart: React.FC<EvolutionChartProps> = ({ labels, conf
                 scales: {
                     y: { 
                         display: true, 
-                        min: 40,
+                        min: 0,
                         max: 100,
-                        grid: { color: 'rgba(0,0,0,0.05)' },
-                        ticks: { font: { size: 10 }, color: '#94A3B8' }
+                        grid: { color: 'rgba(0,0,0,0.05)', tickLength: 0 },
+                        border: { display: false },
+                        ticks: { font: { size: 10 }, color: '#94A3B8', stepSize: 10 }
                     },
                     x: { 
-                        grid: { display: false }, 
+                        grid: { display: true, color: 'rgba(0,0,0,0.05)', tickLength: 0 }, 
                         border: { display: false },
                         ticks: { font: { size: 10 }, color: '#94A3B8' }
                     }

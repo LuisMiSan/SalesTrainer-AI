@@ -48,6 +48,8 @@ const meetingSchema = new mongoose.Schema({
     confidence: { type: Number, min: 0, max: 100 },
     clarity: { type: Number, min: 0, max: 100 },
     empathy: { type: Number, min: 0, max: 100 },
+    persuasion: { type: Number, min: 0, max: 100 }, // New
+    tone: { type: Number, min: 0, max: 100 },       // New
     pace: { type: Number, min: 0, max: 100 }
   },
   clips: [{
@@ -56,7 +58,7 @@ const meetingSchema = new mongoose.Schema({
     endTime: Number, // segundos
     type: {
       type: String,
-      enum: ['strength', 'improvement', 'objection', 'closing', 'general'],
+      enum: ['strength', 'improvement', 'objection' | 'closing', 'general'],
       default: 'general'
     },
     url: String

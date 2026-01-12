@@ -10,13 +10,41 @@ interface UserStats {
   lastPracticeDate?: string;
 }
 
+interface UserNotifications {
+  email?: boolean;
+  push?: boolean;
+  weeklySummary?: boolean;
+  aiFeedback?: boolean;
+  practiceReminders?: boolean;
+  practiceFrequency?: 'daily' | 'weekly';
+  achievements?: boolean;
+  defaultReminderMinutes?: number;
+}
+
+interface UserPreferences {
+  notifications?: UserNotifications;
+  language?: string;
+  theme?: 'light' | 'dark';
+}
+
+interface UserSubscription {
+  plan: 'free' | 'pro' | 'enterprise';
+  startDate?: string;
+  endDate?: string;
+  isActive?: boolean;
+}
+
 interface User {
   id: string;
   name: string;
   email: string;
+  username?: string;
+  company?: string;
   role: string;
   avatar?: string;
   stats?: UserStats;
+  preferences?: UserPreferences;
+  subscription?: UserSubscription;
 }
 
 interface AuthContextType {

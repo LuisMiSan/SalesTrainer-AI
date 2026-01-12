@@ -7,13 +7,13 @@ export const Sidebar: React.FC = () => {
     const location = useLocation();
 
     const tabs = [
-        { id: 'dashboard', icon: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-        { id: 'leads', icon: 'group', label: 'Leads', path: '/leads' },
-        { id: 'web-analysis', icon: 'add_circle', label: 'Nuevo Pitch', path: '/web-analysis' },
-        { id: 'objections', icon: 'list', label: 'Objeciones', path: '/objections' },
+        { id: 'dashboard', icon: 'dashboard', label: 'Inicio', path: '/dashboard' },
+        { id: 'leads', icon: 'groups', label: 'Leads', path: '/leads' },
+        { id: 'web-analysis', icon: 'add_circle', label: 'Crear Pitch', path: '/web-analysis' },
+        { id: 'objections', icon: 'format_list_bulleted', label: 'Objeciones', path: '/objections' },
         { id: 'practice', icon: 'mic', label: 'Práctica', path: '/practice' },
-        { id: 'analysis', icon: 'trending_up', label: 'Evolución', path: '/analysis' },
-        { id: 'settings', icon: 'settings', label: 'Ajustes', path: '/settings' },
+        { id: 'analysis', icon: 'monitoring', label: 'Progreso', path: '/analysis' },
+        { id: 'settings', icon: 'settings', label: 'Configuración', path: '/settings' },
     ];
 
     if (location.pathname === '/' || location.pathname === '/login') return null;
@@ -27,7 +27,7 @@ export const Sidebar: React.FC = () => {
                 <h1 className="text-xl font-bold text-text">PerfectCall</h1>
             </div>
 
-            <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-4">
+            <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-4 no-scrollbar">
                 {tabs.map((tab) => {
                     const isActive = location.pathname.startsWith(tab.path);
                     return (
@@ -58,7 +58,7 @@ export const Sidebar: React.FC = () => {
                     }`}
                 >
                     <Icon name="admin_panel_settings" size={20} filled={location.pathname.startsWith('/admin')} />
-                    Admin Panel
+                    Panel Admin
                 </button>
             </div>
 

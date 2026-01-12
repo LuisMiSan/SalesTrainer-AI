@@ -6,13 +6,12 @@ export const BottomNav: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Matching the provided Screenshot footer structure:
-    // Dashboard (Home), Leads (Group), Crear Pitch (Add Box), Análisis (Analytics)
+    // Matching the Sidebar structure
     const tabs = [
-        { id: 'home', icon: 'home', label: 'Dashboard', path: '/dashboard' },
-        { id: 'leads', icon: 'group', label: 'Leads', path: '/leads' },
-        { id: 'create', icon: 'add_box', label: 'Crear Pitch', path: '/web-analysis' },
-        { id: 'analysis', icon: 'analytics', label: 'Análisis', path: '/analysis' },
+        { id: 'home', icon: 'home', label: 'Inicio', path: '/dashboard' },
+        { id: 'leads', icon: 'groups', label: 'Leads', path: '/leads' },
+        { id: 'create', icon: 'add_box', label: 'Crear', path: '/web-analysis' },
+        { id: 'analysis', icon: 'monitoring', label: 'Progreso', path: '/analysis' },
     ];
 
     if (location.pathname === '/' || location.pathname === '/login') return null;

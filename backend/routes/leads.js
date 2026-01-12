@@ -307,6 +307,9 @@ router.get('/stats/dashboard', authMiddleware, async (req, res) => {
   try {
     const userId = req.userId;
 
+    // Fetch user stats specifically for streak info
+    const user = await User.findById(userId).select('stats');
+
     // Total de leads
     const totalLeads = await Lead.countDocuments({ userId });
 
@@ -377,7 +380,8 @@ router.get('/stats/dashboard', authMiddleware, async (req, res) => {
         upcomingFollowUps,
         performance,
         skillTrends,
-        achievements
+        achievements,
+        user: user ? user.stats : {} // Add user stats including streak
       }
     });
 

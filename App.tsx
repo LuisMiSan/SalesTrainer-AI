@@ -3,9 +3,11 @@ import { HashRouter, Routes, Route, useNavigate, Link, useParams } from 'react-r
 import { BottomNav } from './components/BottomNav';
 import { Sidebar } from './components/Sidebar';
 import { Icon } from './components/Icon';
-import { WeeklyBarChart, SkillsRadarChart, EvolutionLineChart } from './components/Charts';
+import { WeeklyBarChart, EvolutionLineChart } from './components/Charts';
+import { WelcomeCard, StreakCard, QuickActionsGrid, SkillProgressCard } from './components/DashboardWidgets'; // Import new widgets
 import { Scenario, Objection, Lead, Meeting, Pitch } from './types';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { api } from './utils/api';
 
 // --- MOCK DATA ---
 const MOCK_SCENARIOS: Scenario[] = [
@@ -42,154 +44,28 @@ const MOCK_PENDING_PITCHES: Pitch[] = [
     { id: 3, title: 'Pitch para Startup X', content: '', date: '2023-10-23', status: 'pending_review', isFavorite: true },
 ];
 
-const HISTORY_DATA = [
-    {
-        id: 1,
-        title: "Reunión con Inversiones Globales",
-        date: "15 de mayo de 2024",
-        status: "closed",
-        scores: { confidence: 85, clarity: 92, empathy: 78 },
-        hasChart: true,
-        clips: [
-            { id: 'c1', title: 'Clip 1', type: 'strength', duration: '0:45' },
-            { id: 'c2', title: 'Clip 2', type: 'objection', duration: '1:20' }
-        ],
-        notes: "Cliente interesado en la integración API. Presupuesto aprobado para Q3.",
-        nextActions: "Enviar documentación técnica y propuesta económica revisada.",
-        leadStatusAfter: "propuesta"
-    },
-    {
-        id: 2,
-        title: "Presentación a Soluciones SaaS",
-        date: "10 de mayo de 2024",
-        status: "closed",
-        scores: { confidence: 80, clarity: 88, empathy: 75 },
-        hasChart: false,
-        clips: [],
-        notes: "Reunión positiva. Tienen dudas sobre la seguridad.",
-        nextActions: "Agendar reunión con el CISO.",
-        leadStatusAfter: "reunión"
-    },
-    {
-        id: 3,
-        title: "Seguimiento con Tecnologías Apex",
-        date: "5 de mayo de 2024",
-        status: "pending",
-        scores: { confidence: 75, clarity: 85, empathy: 70 },
-        hasChart: false,
-        clips: [
-            { id: 'c3', title: 'Clip 1', type: 'closing', duration: '0:30' }
-        ]
-    }
-];
-
 const CHART_DATA = {
     labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
     confidence: [50, 55, 50, 85, 90, 80, 85],
-    clarity: [50, 55, 65, 75, 50, 55, 70],
-    empathy: [50, 50, 50, 50, 55, 60, 70]
+    clarity:    [20, 30, 25, 60, 85, 80, 80],
+    empathy:    [15, 15, 15, 15, 55, 60, 70] 
 };
 
-// --- COMPONENTS ---
+const ACHIEVEMENTS = [
+    { id: 1, title: "¡Top 10 en Claridad!", description: "Tu puntuación de claridad está en el ranking.", icon: "military_tech", color: "bg-blue-500" },
+    { id: 2, title: "Mejora notable en Empatía", description: "+15% vs la semana pasada.", icon: "trending_up", color: "bg-blue-400" }
+];
 
-const ClipPlayerModal = ({ clip, onClose }: { clip: any, onClose: () => void }) => {
-    if (!clip) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fade-in">
-            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl transform transition-all scale-100">
-                <div className="bg-secondary text-white p-4 flex justify-between items-center">
-                    <h3 className="font-bold">{clip.title}</h3>
-                    <button onClick={onClose}><Icon name="close" className="text-white/80 hover:text-white" /></button>
-                </div>
-                <div className="p-8 flex flex-col items-center justify-center bg-gray-900 aspect-video">
-                    <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center mb-4 cursor-pointer hover:scale-110 transition-transform">
-                        <Icon name="play_arrow" size={32} className="text-white" />
-                    </div>
-                    <div className="w-full bg-gray-700 h-1 rounded-full mt-4 overflow-hidden">
-                        <div className="bg-primary w-1/3 h-full"></div>
-                    </div>
-                    <div className="flex justify-between w-full text-xs text-gray-400 mt-2">
-                        <span>0:15</span>
-                        <span>{clip.duration || '1:00'}</span>
-                    </div>
-                </div>
-                <div className="p-4 bg-surface">
-                    <p className="text-sm text-subtle">Este clip muestra un momento clave de la conversación analizado por la IA.</p>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const Toggle = ({ checked, onChange }: { checked: boolean, onChange: () => void }) => (
-    <button 
-        onClick={onChange}
-        className={`w-12 h-7 rounded-full transition-colors relative focus:outline-none ${checked ? 'bg-primary' : 'bg-gray-200'}`}
-    >
-        <div className={`w-6 h-6 bg-white rounded-full absolute top-0.5 shadow-sm transition-transform transform duration-200 ease-in-out ${checked ? 'translate-x-5.5' : 'translate-x-0.5'}`} style={{ left: 0, transform: checked ? 'translateX(22px)' : 'translateX(2px)' }}></div>
-    </button>
-);
-
-const ProgressBar = ({ label, value, color }: { label: string, value: number, color: string }) => (
-    <div className="mb-4">
-        <div className="flex justify-between mb-1">
-            <span className="text-sm font-medium text-text">{label}</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-4">
-            <div 
-                className={`h-4 rounded-full ${color}`} 
-                style={{ width: `${value}%` }}
-            ></div>
-        </div>
-    </div>
-);
-
-// --- HELPER FOR LEAD STATUS ---
-const getStatusColor = (status: string) => {
+//Helper
+const getStatusDotColor = (status: string) => {
     switch (status) {
-        case 'Propuesta': return 'text-yellow-500 bg-yellow-500';
-        case 'Contactado': return 'text-green-500 bg-green-500';
-        case 'Negociación': return 'text-blue-500 bg-blue-500';
-        case 'Ganado': return 'text-green-600 bg-green-600';
-        case 'Perdido': return 'text-red-500 bg-red-500';
-        default: return 'text-gray-400 bg-gray-400';
+        case 'Propuesta': return 'bg-yellow-500';
+        case 'Contactado': return 'bg-green-500';
+        case 'Negociación': return 'bg-blue-500';
+        case 'Ganado': return 'bg-green-600';
+        default: return 'bg-gray-400';
     }
 };
-
-// --- PLACEHOLDER COMPONENTS ---
-const Objections = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Objeciones</h1><p className="text-subtle">Lista de objeciones comunes.</p></div>;
-const CreateObjectionPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Crear Objeción</h1><p className="text-subtle">Formulario para añadir nueva objeción.</p></div>;
-const Scenarios = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Escenarios</h1><p className="text-subtle">Escenarios de práctica disponibles.</p></div>;
-const LeadsPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Leads</h1><p className="text-subtle">Gestión de prospectos y clientes.</p></div>;
-const MeetingsPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Reuniones</h1><p className="text-subtle">Calendario de reuniones.</p></div>;
-const MeetingResultsPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Resultados de Reunión</h1><p className="text-subtle">Análisis y detalles de la reunión.</p></div>;
-const WebAnalysis = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Análisis Web</h1><p className="text-subtle">Generación de pitch desde URL.</p></div>;
-const ManualPitchPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Pitch Manual</h1><p className="text-subtle">Crear pitch manualmente.</p></div>;
-const Practice = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Práctica</h1><p className="text-subtle">Sesión de entrenamiento.</p></div>;
-const Settings = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Ajustes</h1><p className="text-subtle">Configuración de usuario.</p></div>;
-const SubscriptionSuccessPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4 text-green-600">¡Suscripción Exitosa!</h1><p className="text-subtle">Gracias por suscribirte.</p></div>;
-
-const CallHistoryPage = ({ isUserView, userName }: { isUserView?: boolean, userName?: string }) => (
-    <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Historial de Llamadas {userName ? `de ${userName}` : ''}</h1>
-        <p className="text-subtle">Análisis y evolución de llamadas.</p>
-    </div>
-);
-
-const WebHistoryPage = ({ isUserView, userName }: { isUserView?: boolean, userName?: string }) => (
-    <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Historial de Pitches {userName ? `de ${userName}` : ''}</h1>
-        <p className="text-subtle">Pitches generados y revisados.</p>
-    </div>
-);
-
-const ProfilePage = ({ isUserView, userId }: { isUserView?: boolean, userId?: string }) => (
-    <div className="p-8">
-        <h1 className="text-2xl font-bold mb-4">Perfil {userId ? `(Usuario: ${userId})` : ''}</h1>
-        <p className="text-subtle">Detalles del usuario y estadísticas.</p>
-    </div>
-);
 
 // --- PAGES ---
 
@@ -220,20 +96,316 @@ const LoginPage = () => {
     );
 };
 
+// --- SETTINGS SUB-COMPONENTS ---
+const SettingsProfile = () => {
+    const { user, login, token } = useAuth();
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        name: user?.name || '',
+        email: user?.email || '',
+        company: user?.company || '',
+        username: user?.username || ''
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            const res = await api.put('/auth/profile', formData);
+            if (res.success && token) {
+                login(token, res.user); // Update local user state
+                alert('Perfil actualizado correctamente');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error al actualizar perfil');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <header className="flex items-center mb-6">
+                <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary">
+                    <Icon name="arrow_back" />
+                </button>
+                <h1 className="text-2xl font-bold text-text">Editar Perfil</h1>
+            </header>
+
+            <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre Completo</label>
+                        <input 
+                            type="text" 
+                            value={formData.name}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
+                            className="w-full p-3 bg-background rounded-xl border border-gray-200 focus:outline-none focus:border-primary"
+                        />
+                    </div>
+                     <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre de Usuario</label>
+                        <input 
+                            type="text" 
+                            value={formData.username}
+                            onChange={(e) => setFormData({...formData, username: e.target.value})}
+                            className="w-full p-3 bg-background rounded-xl border border-gray-200 focus:outline-none focus:border-primary"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
+                        <input 
+                            type="email" 
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                            className="w-full p-3 bg-background rounded-xl border border-gray-200 focus:outline-none focus:border-primary"
+                        />
+                    </div>
+                     <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Empresa</label>
+                        <input 
+                            type="text" 
+                            value={formData.company}
+                            onChange={(e) => setFormData({...formData, company: e.target.value})}
+                            className="w-full p-3 bg-background rounded-xl border border-gray-200 focus:outline-none focus:border-primary"
+                        />
+                    </div>
+                </div>
+
+                <button 
+                    type="submit" 
+                    disabled={isLoading}
+                    className="w-full py-4 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 disabled:opacity-50"
+                >
+                    {isLoading ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+            </form>
+        </div>
+    );
+};
+
+const SettingsNotifications = () => {
+    const { user, login, token } = useAuth();
+    const navigate = useNavigate();
+    // Use preferences from user object, default to true if undefined for better UX initially
+    const [prefs, setPrefs] = useState({
+        email: user?.preferences?.notifications?.email ?? true,
+        push: user?.preferences?.notifications?.push ?? true,
+        weeklySummary: user?.preferences?.notifications?.weeklySummary ?? false,
+        aiFeedback: user?.preferences?.notifications?.aiFeedback ?? false
+    });
+
+    const toggle = async (key: keyof typeof prefs) => {
+        const newPrefs = { ...prefs, [key]: !prefs[key] };
+        setPrefs(newPrefs);
+        
+        try {
+            const res = await api.put('/auth/profile', {
+                preferences: { notifications: newPrefs }
+            });
+            if (res.success && token) {
+                login(token, res.user);
+            }
+        } catch (error) {
+            console.error('Error updating notifications', error);
+        }
+    };
+
+    return (
+        <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <header className="flex items-center mb-6">
+                <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary">
+                    <Icon name="arrow_back" />
+                </button>
+                <h1 className="text-2xl font-bold text-text">Notificaciones</h1>
+            </header>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                {[
+                    { key: 'email', label: 'Notificaciones por Email', desc: 'Recibe resúmenes y alertas importantes.' },
+                    { key: 'push', label: 'Notificaciones Push', desc: 'Alertas inmediatas en tu dispositivo.' },
+                    { key: 'weeklySummary', label: 'Resumen Semanal', desc: 'Un reporte de tu progreso cada lunes.' },
+                    { key: 'aiFeedback', label: 'Feedback de IA', desc: 'Avisos cuando tu análisis esté listo.' }
+                ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between p-4 border-b border-gray-100 last:border-0">
+                        <div>
+                            <h3 className="font-bold text-gray-900">{item.label}</h3>
+                            <p className="text-xs text-subtle">{item.desc}</p>
+                        </div>
+                        <button 
+                            onClick={() => toggle(item.key as keyof typeof prefs)}
+                            className={`w-12 h-6 rounded-full relative transition-colors ${prefs[item.key as keyof typeof prefs] ? 'bg-primary' : 'bg-gray-300'}`}
+                        >
+                            <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all ${prefs[item.key as keyof typeof prefs] ? 'right-1' : 'left-1'}`} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const SettingsSubscription = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const isPro = user?.subscription?.plan === 'pro' || user?.subscription?.plan === 'enterprise';
+
+    return (
+        <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <header className="flex items-center mb-6">
+                <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary">
+                    <Icon name="arrow_back" />
+                </button>
+                <h1 className="text-2xl font-bold text-text">Suscripción</h1>
+            </header>
+
+            <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 text-center mb-6">
+                <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+                    <Icon name="diamond" size={32} />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Plan Actual: {isPro ? 'PRO' : 'Gratuito'}</h2>
+                <p className="text-subtle text-sm mt-2">
+                    {isPro ? 'Tu próxima renovación es el 12/12/2024' : 'Desbloquea todo el potencial de la IA.'}
+                </p>
+            </div>
+
+            {!isPro && (
+                <div className="bg-gradient-to-br from-primary to-blue-600 p-6 rounded-3xl shadow-lg text-white">
+                    <h3 className="text-lg font-bold mb-2">Pásate a PRO</h3>
+                    <ul className="space-y-2 text-sm opacity-90 mb-6">
+                        <li className="flex items-center gap-2"><Icon name="check" size={16} /> Pitches ilimitados</li>
+                        <li className="flex items-center gap-2"><Icon name="check" size={16} /> Análisis avanzado de voz</li>
+                        <li className="flex items-center gap-2"><Icon name="check" size={16} /> Escenarios personalizados</li>
+                    </ul>
+                    <button className="w-full py-3 bg-white text-primary font-bold rounded-xl hover:bg-gray-50 transition-colors">
+                        Mejorar Plan - $29/mes
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const SettingsHelp = () => {
+    const navigate = useNavigate();
+    return (
+        <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <header className="flex items-center mb-6">
+                <button onClick={() => navigate(-1)} className="mr-3 text-subtle hover:text-primary">
+                    <Icon name="arrow_back" />
+                </button>
+                <h1 className="text-2xl font-bold text-text">Ayuda y Soporte</h1>
+            </header>
+            
+            <div className="space-y-4">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-900 mb-2">Preguntas Frecuentes</h3>
+                    <p className="text-sm text-subtle">Revisa nuestra documentación para resolver dudas rápidas.</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-900 mb-2">Contactar Soporte</h3>
+                    <p className="text-sm text-subtle mb-3">¿Tienes un problema? Escríbenos.</p>
+                    <a href="mailto:soporte@perfectcall.ai" className="text-primary font-bold text-sm">soporte@perfectcall.ai</a>
+                </div>
+                <div className="text-center pt-8 text-xs text-gray-400">
+                    <p>PerfectCall AI v1.0.0</p>
+                    <p>Hecho con ❤️ para vendedores</p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const Settings = () => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        if (window.confirm('¿Estás seguro de que quieres cerrar sesión?')) {
+            logout();
+            navigate('/login');
+        }
+    };
+
+    const menuItems = [
+        { label: 'Perfil', path: '/settings/profile' },
+        { label: 'Notificaciones', path: '/settings/notifications' },
+        { label: 'Suscripción', path: '/settings/subscription' },
+        { label: 'Ayuda', path: '/settings/help' },
+    ];
+
+    const getInitials = (name: string) => {
+        return name ? name.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : 'U';
+    };
+
+    return (
+        <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <h1 className="text-2xl font-bold text-text mb-6">Configuración</h1>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-100 flex items-center gap-4">
+                     <div className="w-12 h-12 rounded-full bg-secondary text-white flex items-center justify-center font-bold text-lg">
+                        {getInitials(user?.name || '')}
+                     </div>
+                     <div>
+                         <h3 className="font-bold text-gray-900">{user?.name || 'Usuario'}</h3>
+                         <p className="text-sm text-subtle capitalize">{user?.role === 'admin' ? 'Administrador' : user?.company || 'Usuario'}</p>
+                     </div>
+                </div>
+                <div className="p-2">
+                    {menuItems.map((item) => (
+                        <button 
+                            key={item.label} 
+                            onClick={() => navigate(item.path)}
+                            className="w-full flex items-center justify-between p-4 hover:bg-gray-50 rounded-xl transition-colors text-left"
+                        >
+                            <span className="text-gray-700 font-medium">{item.label}</span>
+                            <Icon name="chevron_right" className="text-gray-400" />
+                        </button>
+                    ))}
+                </div>
+                <div className="p-4 border-t border-gray-100">
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full text-red-500 font-bold py-2 text-center hover:bg-red-50 rounded-xl transition-colors"
+                    >
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- RESTORED & ENHANCED DASHBOARD ---
 const Dashboard = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    
-    // Dynamic values with fallbacks
-    const userName = user?.name || 'Usuario';
-    const streak = user?.stats?.streak || 5;
+    const [streak, setStreak] = useState(0);
 
+    // Fetch dashboard stats (streak, etc)
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await api.get('/leads/stats/dashboard');
+                if (res.success && res.stats.user) {
+                   setStreak(res.stats.user.streak || 0);
+                }
+            } catch (error) {
+                console.error("Error fetching dashboard stats", error);
+            }
+        };
+        fetchStats();
+    }, []);
+    
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col justify-between overflow-x-hidden bg-background-light dark:bg-background-dark">
             <div className="flex-grow">
-                <header className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark">
+                {/* HEADER */}
+                <header className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark sticky top-0 z-10">
                     <div className="w-12"></div>
-                    <h1 className="flex-1 text-center text-lg font-bold text-foreground-light dark:text-foreground-dark">Dashboard</h1>
+                    <h1 className="flex-1 text-center text-lg font-bold text-foreground-light dark:text-foreground-dark">Inicio</h1>
                     <div className="flex w-12 items-center justify-end">
                         <button 
                             onClick={() => navigate('/settings')}
@@ -243,85 +415,249 @@ const Dashboard = () => {
                         </button>
                     </div>
                 </header>
-                <main className="px-4 pb-8">
-                    <div className="mb-6 rounded-2xl bg-primary/10 dark:bg-primary/20 p-6 text-center">
-                        <img 
-                            alt="Ilustración amigable" 
-                            className="mx-auto mb-4 h-24 w-24 rounded-full object-cover" 
-                            src={user?.avatar || "https://lh3.googleusercontent.com/aida-public/AB6AXuCTH06CJ2bT5pJ3yiGSjgBwSdfzWODhxLIP7txr__98phd9JQiyqM2zSPB5WuOunRzE6B4P85BcfNK-h_rysXPgcGClE5fBefW5qseuIZbojQvu6ozRumwnH0ZsSau-xiZOfVpA23MGqpt5jNI8euHxOKITXVYi_0mA67gz4SP5GIzfPepzycvmqklmy1HbXN8SVxO4n5Dk-oqvUGQFsBKabofg5sAaNYYScPQaal8qcRL3-D9CQ-bv7qx-9QFwZlk-Yfv8TqKEUIc9"}
-                        />
-                        <h2 className="text-xl font-bold text-foreground-light dark:text-foreground-dark">¡Hola de nuevo!</h2>
-                        <p className="text-subtle-light dark:text-subtle-dark">
-                            Tu racha de práctica es de <span className="font-bold text-primary">{streak} días</span>. ¡Sigue así!
-                        </p>
-                    </div>
+
+                <main className="px-4 pb-8 space-y-4">
                     
-                    <div className="grid grid-cols-2 gap-4">
-                        <div onClick={() => navigate('/web-analysis')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">travel_explore</span>
-                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Iniciar Análisis</h3>
-                        </div>
-                        <div onClick={() => navigate('/leads')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">groups</span>
-                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Leads Activos</h3>
-                        </div>
-                        <div onClick={() => navigate('/web-history')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">pending_actions</span>
-                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Pitches Pendientes</h3>
-                        </div>
-                        <div onClick={() => navigate('/practice')} className="block cursor-pointer rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4 text-center hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
-                            <span className="material-symbols-outlined text-4xl text-primary mx-auto">checklist</span>
-                            <h3 className="mt-2 text-sm font-bold text-foreground-light dark:text-foreground-dark">Práctica Diaria</h3>
-                        </div>
-                    </div>
+                    {/* 1. WELCOME CARD (NEW) */}
+                    <WelcomeCard userName={user?.name || "Usuario"} />
 
-                    <div className="mt-6 rounded-2xl bg-background-light dark:bg-background-dark border border-primary/20 p-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-base font-bold text-foreground-light dark:text-foreground-dark">Progreso Semanal</h3>
-                            <Link to="/analysis" className="text-sm font-medium text-primary">Detalles</Link>
-                        </div>
-                        <div className="h-48">
-                             {/* Reusing existing WeeklyBarChart or similar logic, assuming updated chart styling happens inside component or global CSS */}
-                            <WeeklyBarChart 
-                                labels={['Confianza', 'Claridad', 'Empatía']}
-                                data={[75, 88, 82]}
-                            />
-                        </div>
-                    </div>
+                    {/* 2. STREAK CARD (NEW) */}
+                    <StreakCard days={streak} />
 
-                    <div className="mt-6">
+                    {/* 3. QUICK ACTIONS GRID (NEW) */}
+                    <QuickActionsGrid />
+
+                    {/* 4. WEEKLY PROGRESS (NEW - BARS) */}
+                    {/* Static values for now based on image, real values would come from API */}
+                    <SkillProgressCard confidence={85} clarity={60} empathy={90} />
+
+                    {/* 5. LEADS RECIENTES (EXISTING - KEPT) */}
+                    <div className="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-base font-bold text-foreground-light dark:text-foreground-dark">Leads Recientes</h3>
-                            <Link to="/leads" className="text-sm font-medium text-primary">Ver todos</Link>
+                            <h3 className="text-base font-bold text-gray-900">Leads Recientes</h3>
+                            <button onClick={() => navigate('/leads')} className="text-sm text-primary hover:underline">Ver todos</button>
                         </div>
                         <div className="space-y-4">
-                             {MOCK_LEADS.slice(0, 2).map((lead) => (
+                            {MOCK_LEADS.slice(0, 3).map((lead) => (
                                 <div key={lead.id} className="flex items-center justify-between cursor-pointer" onClick={() => navigate('/leads')}>
                                     <div className="flex items-center gap-3">
                                         <img 
-                                            alt={lead.name} 
-                                            className="h-10 w-10 rounded-full object-cover" 
                                             src={lead.avatar || `https://ui-avatars.com/api/?name=${lead.name}&background=random`} 
+                                            alt={lead.name}
+                                            className="w-12 h-12 rounded-full object-cover"
                                         />
                                         <div>
-                                            <p className="font-medium text-foreground-light dark:text-foreground-dark">{lead.name}</p>
-                                            <p className="text-sm text-subtle-light dark:text-subtle-dark">
-                                                {lead.status === 'Propuesta' ? 'Propuesta enviada' : 'Primer contacto'}
-                                            </p>
+                                            <h4 className="font-bold text-gray-900 text-sm">{lead.name}</h4>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-xs text-gray-500">
+                                                    {lead.status === 'Propuesta' ? 'Propuesta enviada' : lead.status === 'Contactado' ? 'Primer contacto' : lead.status}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <span className="material-symbols-outlined text-xl text-subtle-light dark:text-subtle-dark">chevron_right</span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-gray-400 text-lg">chevron_right</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
                     </div>
+
                 </main>
             </div>
         </div>
     );
 };
 
-// ... other components ...
+// ... (Rest of existing components: LeadsPage, WebAnalysis, etc. remain unchanged) ...
+// --- RESTORED LEADS PAGE (Was Empty) ---
+const LeadsPage = () => (
+    <div className="p-4 md:p-8 pb-20 md:pb-8">
+        <header className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-text">Gestión de Leads</h1>
+            <button className="bg-primary text-white p-3 rounded-xl shadow-lg shadow-primary/20">
+                <Icon name="add" />
+            </button>
+        </header>
+        <div className="space-y-3">
+             {MOCK_LEADS.map((lead) => (
+                <div key={lead.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <img 
+                            src={lead.avatar || `https://ui-avatars.com/api/?name=${lead.name}&background=random`} 
+                            alt={lead.name}
+                            className="w-12 h-12 rounded-full object-cover"
+                        />
+                        <div>
+                            <h4 className="font-bold text-gray-900">{lead.name}</h4>
+                            <p className="text-xs text-subtle">{lead.company} • {lead.position}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className={`w-2 h-2 rounded-full ${getStatusDotColor(lead.status)}`}></span>
+                                <span className="text-xs text-gray-500">{lead.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                     <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// --- RESTORED WEB ANALYSIS PAGE (Was Empty) ---
+const WebAnalysis = () => (
+    <div className="p-4 md:p-8 pb-20 md:pb-8">
+        <h1 className="text-2xl font-bold text-text mb-2">Análisis Web</h1>
+        <p className="text-subtle mb-6">Genera un pitch de ventas analizando una URL.</p>
+        
+        <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-primary">
+                    <Icon name="language" />
+                </div>
+                <h3 className="font-bold text-gray-900">Nueva URL</h3>
+            </div>
+            <div className="flex gap-2">
+                <input 
+                    type="text" 
+                    placeholder="https://ejemplo.com" 
+                    className="flex-1 bg-background border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-primary transition-colors"
+                />
+                <button className="bg-primary text-white px-6 rounded-xl font-bold shadow-lg shadow-primary/20">
+                    Analizar
+                </button>
+            </div>
+        </div>
+
+        <h3 className="font-bold text-gray-900 mb-4 px-1">Análisis Recientes</h3>
+        <div className="space-y-3">
+            {MOCK_PENDING_PITCHES.map((pitch) => (
+                <div key={pitch.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-bold text-gray-900">{pitch.title}</h4>
+                        <span className="text-xs text-subtle">{pitch.date}</span>
+                    </div>
+                     <div className="flex items-center gap-2">
+                        <span className="bg-blue-50 text-primary text-xs px-2 py-1 rounded-md font-medium">
+                            {pitch.status === 'pending_review' ? 'En Revisión' : 'Completado'}
+                        </span>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// --- RESTORED OBJECTIONS PAGE (Was Empty) ---
+const Objections = () => {
+    return (
+        <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <h1 className="text-2xl font-bold text-text mb-6">Objeciones Comunes</h1>
+            <div className="grid grid-cols-1 gap-4">
+                {MOCK_OBJECTIONS.map((obj) => (
+                    <div key={obj.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                        <div className="flex items-start gap-4">
+                            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center text-warning shrink-0">
+                                <Icon name={obj.icon} />
+                            </div>
+                            <div className="flex-1">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="font-bold text-gray-900 mb-1">{obj.title}</h3>
+                                    <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">{obj.category}</span>
+                                </div>
+                                <p className="text-sm text-subtle mb-3">Respuesta sugerida:</p>
+                                <p className="text-gray-700 bg-gray-50 p-3 rounded-xl text-sm italic border-l-4 border-warning">
+                                    "{obj.response}"
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// --- RESTORED PRACTICE PAGE (Was Empty) ---
+const Practice = () => {
+    return (
+         <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <h1 className="text-2xl font-bold text-text mb-6">Sala de Práctica</h1>
+            <p className="text-subtle mb-6">Elige un escenario para comenzar a entrenar con la IA.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {MOCK_SCENARIOS.map((scenario) => (
+                    <div key={scenario.id} className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 relative overflow-hidden group hover:border-primary/50 transition-colors cursor-pointer">
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start mb-4">
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                    scenario.difficulty === 'Principiante' ? 'bg-green-100 text-green-700' :
+                                    scenario.difficulty === 'Intermedio' ? 'bg-yellow-100 text-yellow-700' :
+                                    'bg-red-100 text-red-700'
+                                }`}>
+                                    {scenario.difficulty}
+                                </span>
+                                {scenario.status === 'Bloqueado' && <Icon name="lock" className="text-gray-300" />}
+                            </div>
+                            
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">{scenario.personaName}</h3>
+                            <p className="text-sm text-primary font-medium mb-2">{scenario.role} en {scenario.companyType}</p>
+                            <p className="text-sm text-subtle mb-6 line-clamp-2">{scenario.description}</p>
+                            
+                            <button className="w-full py-3 bg-gray-50 hover:bg-primary hover:text-white text-gray-700 font-bold rounded-xl transition-all">
+                                {scenario.status === 'Bloqueado' ? 'Desbloquear' : 'Practicar'}
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// --- RESTORED ANALYSIS PAGE (Was Empty) ---
+const AnalysisPage = () => {
+    return (
+         <div className="p-4 md:p-8 pb-20 md:pb-8">
+            <h1 className="text-2xl font-bold text-text mb-6">Análisis de Rendimiento</h1>
+            
+            <div className="grid grid-cols-1 gap-6">
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <h3 className="font-bold text-gray-900 mb-6">Evolución de Habilidades</h3>
+                    <div className="h-64">
+                         <EvolutionLineChart 
+                                labels={CHART_DATA.labels}
+                                confidenceData={CHART_DATA.confidence}
+                                clarityData={CHART_DATA.clarity}
+                                empathyData={CHART_DATA.empathy}
+                            />
+                    </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                     <h3 className="font-bold text-gray-900 mb-6">Desglose Semanal</h3>
+                     <div className="h-64">
+                        <WeeklyBarChart 
+                            labels={CHART_DATA.labels}
+                            data={[65, 59, 80, 81, 56, 55, 40]}
+                        />
+                     </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ... other components placeholders ...
+const CreateObjectionPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Crear Objeción</h1><p className="text-subtle">Formulario para añadir nueva objeción.</p></div>;
+const Scenarios = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Escenarios</h1><p className="text-subtle">Escenarios de práctica disponibles.</p></div>;
+const MeetingsPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Reuniones</h1><p className="text-subtle">Calendario de reuniones.</p></div>;
+const MeetingResultsPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Resultados de Reunión</h1><p className="text-subtle">Análisis y detalles de la reunión.</p></div>;
+const ManualPitchPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Pitch Manual</h1><p className="text-subtle">Crear pitch manualmente.</p></div>;
+const SubscriptionSuccessPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4 text-green-600">¡Suscripción Exitosa!</h1><p className="text-subtle">Gracias por suscribirte.</p></div>;
+const WebHistoryPage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Historial</h1><p className="text-subtle">Historial de pitches.</p></div>;
+const ProfilePage = () => <div className="p-8"><h1 className="text-2xl font-bold mb-4">Perfil</h1><p className="text-subtle">Detalles del usuario.</p></div>;
+
 
 const AdminPage = () => {
     const navigate = useNavigate();
@@ -342,10 +678,8 @@ const AdminPage = () => {
                         {viewingUser.type === 'calls' ? 'Llamadas de' : viewingUser.type === 'pitches' ? 'Pitches de' : 'Perfil de'} {viewingUser.name}
                     </h1>
                 </div>
-                
-                {viewingUser.type === 'calls' && <CallHistoryPage isUserView userName={viewingUser.name} />}
-                {viewingUser.type === 'pitches' && <WebHistoryPage isUserView userName={viewingUser.name} />}
-                {viewingUser.type === 'profile' && <ProfilePage isUserView userId={viewingUser.id} />}
+                {/* Simplified placeholders for user details within admin for now */}
+                <div className="p-4 bg-white rounded-xl shadow-sm">Detalles de {viewingUser.name}</div>
             </div>
         );
     }
@@ -397,18 +731,48 @@ const AdminPage = () => {
 
             {activeTab === 'dashboard' && (
                 <div className="space-y-6">
-                    {/* Global Skill Evolution Chart */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-base font-bold text-[#2C3E50]">Evolución Global de Habilidades</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* System-wide Pending Pitches */}
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                             <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-base font-bold text-gray-900">Resumen Operativo</h3>
+                                <span className="bg-blue-100 text-primary text-xs font-bold px-2 py-1 rounded-full">Hoy</span>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-primary">
+                                            <Icon name="pending_actions" size={20} />
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-700">Pitches Pendientes de Revisión</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-gray-900">42</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                                            <Icon name="check_circle" size={20} />
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-700">Leads Convertidos</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-gray-900">15</span>
+                                </div>
+                            </div>
                         </div>
-                        <div className="h-72">
-                            <EvolutionLineChart 
-                                labels={['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4']} 
-                                confidenceData={[65, 68, 72, 75]}
-                                clarityData={[60, 65, 70, 74]}
-                                empathyData={[70, 72, 74, 78]}
-                            />
+
+                        {/* Global Skill Evolution Chart */}
+                        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-base font-bold text-[#2C3E50]">Tendencia Global de Habilidades</h3>
+                            </div>
+                            <div className="h-48">
+                                <EvolutionLineChart 
+                                    labels={['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4']} 
+                                    confidenceData={[65, 68, 72, 75]}
+                                    clarityData={[60, 65, 70, 74]}
+                                    empathyData={[70, 72, 74, 78]}
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -428,13 +792,6 @@ const AdminPage = () => {
                                 </div>
                             </div>
                             <div className="flex gap-4 items-center">
-                                {/* Added Streak Info for Admin */}
-                                <div className="text-center min-w-[3rem] hidden md:block">
-                                     <span className="block font-bold text-lg text-[#3498DB]">
-                                        {Math.floor(Math.random() * 15)}🔥
-                                     </span>
-                                     <span className="text-[10px] text-subtle uppercase font-bold">Racha</span>
-                                </div>
                                 <div className="flex gap-2">
                                     <button onClick={() => setViewingUser({id: `${i}`, name: `Usuario Demo ${i}`, type: 'profile'})} className="p-2 text-subtle hover:text-primary"><Icon name="person" size={20} /></button>
                                     <button onClick={() => setViewingUser({id: `${i}`, name: `Usuario Demo ${i}`, type: 'calls'})} className="p-2 text-subtle hover:text-primary"><Icon name="history" size={20} /></button>
@@ -483,11 +840,15 @@ const App = () => {
                         
                         {/* Practice */}
                         <Route path="/practice" element={<Practice />} />
-                        <Route path="/analysis" element={<CallHistoryPage />} />
+                        <Route path="/analysis" element={<AnalysisPage />} />
                         
                         {/* User & Settings */}
-                        <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/settings/profile" element={<SettingsProfile />} />
+                        <Route path="/settings/notifications" element={<SettingsNotifications />} />
+                        <Route path="/settings/subscription" element={<SettingsSubscription />} />
+                        <Route path="/settings/help" element={<SettingsHelp />} />
+                        <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/success" element={<SubscriptionSuccessPage />} />
                         
                         {/* Admin */}

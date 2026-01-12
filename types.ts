@@ -12,10 +12,10 @@ export interface Scenario {
 export interface Objection {
     id: number;
     title: string;
-    category: string; // Changed from enum to string to support flexible input
+    category: string; 
     response: string;
     icon: string;
-    description?: string; // Added description
+    description?: string; 
 }
 
 export interface TrainingSession {
@@ -76,7 +76,7 @@ export interface Pitch {
     url?: string;
     isFavorite: boolean;
     date: string;
-    status?: 'draft' | 'active' | 'archived' | 'pending_review' | 'reviewed'; // Added status
+    status?: 'draft' | 'active' | 'archived' | 'pending_review' | 'reviewed'; 
 }
 
 export interface UserStats {

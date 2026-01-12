@@ -34,6 +34,8 @@ const practiceSessionSchema = new mongoose.Schema({
     pace: Number,
     confidence: Number,
     empathy: Number,
+    persuasion: Number, // New
+    tone: Number,       // New
     engagement: Number,
     fillerWords: Number,
     keywordUsage: Number
@@ -106,6 +108,8 @@ Evalúa en escala 0-100:
 - Ritmo: ¿El ritmo es apropiado (ni muy rápido ni muy lento)?
 - Confianza: ¿Proyecta confianza y seguridad?
 - Empatía: ¿Conecta emocionalmente y muestra comprensión?
+- Persuasión: ¿Qué tan convincente es el argumento?
+- Tono: ¿El tono es profesional y adecuado?
 
 Proporciona:
 - 3 fortalezas específicas
@@ -121,6 +125,8 @@ Responde SOLO con JSON válido:
   "pace": 70,
   "confidence": 85,
   "empathy": 91,
+  "persuasion": 75,
+  "tone": 80,
   "improvements": [
     {"title": "Aumentar la claridad", "description": "Usa frases más directas y pausas más cortas para proyectar mayor seguridad.", "icon": "campaign"},
     {"title": "Modulación de voz", "description": "Varía tu entonación para generar más interés y conectar mejor con el cliente.", "icon": "volume_up"}
@@ -154,6 +160,8 @@ Responde SOLO con JSON válido:
         pace: analysis.pace,
         confidence: analysis.confidence,
         empathy: analysis.empathy,
+        persuasion: analysis.persuasion || 75,
+        tone: analysis.tone || 80,
         engagement: analysis.empathy, // Fallback
         fillerWords: 0,
         keywordUsage: 80
@@ -383,7 +391,9 @@ router.get('/stats', authMiddleware, async (req, res) => {
       clarity: sessions.reduce((sum, s) => sum + s.analysis.clarity, 0) / totalSessions,
       pace: sessions.reduce((sum, s) => sum + s.analysis.pace, 0) / totalSessions,
       confidence: sessions.reduce((sum, s) => sum + s.analysis.confidence, 0) / totalSessions,
-      engagement: sessions.reduce((sum, s) => sum + s.analysis.engagement, 0) / totalSessions
+      empathy: sessions.reduce((sum, s) => sum + s.analysis.empathy, 0) / totalSessions,
+      persuasion: sessions.reduce((sum, s) => sum + (s.analysis.persuasion || 0), 0) / totalSessions,
+      tone: sessions.reduce((sum, s) => sum + (s.analysis.tone || 0), 0) / totalSessions
     };
 
     // Progresión en el tiempo

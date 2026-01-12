@@ -32,6 +32,12 @@ router.get('/stats', async (req, res) => {
     
     const totalObjections = await Objection.countDocuments();
 
+    // Get Top Users by Streak
+    const topStreaks = await User.find({ 'stats.streak': { $gt: 0 } })
+        .sort({ 'stats.streak': -1 })
+        .limit(5)
+        .select('name email stats.streak avatar');
+
     // Calculate simulated global performance for dashboard widgets
     // In production this would aggregate real data
     const globalPerformance = {
@@ -39,14 +45,6 @@ router.get('/stats', async (req, res) => {
         conversionRate: 18,
         avgClosingTime: 21,
         dailyActivity: [120, 150, 180, 140, 160, 90, 45]
-    };
-
-    // Simulated Global Skill Trends
-    const globalSkillTrends = {
-        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
-        confidence: [60, 65, 70, 75],
-        clarity: [55, 60, 68, 72],
-        empathy: [65, 68, 70, 74]
     };
 
     res.json({
@@ -58,8 +56,8 @@ router.get('/stats', async (req, res) => {
         pendingPitches,
         totalSessions: totalAnalyzedMeetings,
         totalObjections,
-        globalPerformance,
-        globalSkillTrends
+        topStreaks, // New field
+        globalPerformance
       }
     });
   } catch (error) {
