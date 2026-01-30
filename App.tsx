@@ -386,6 +386,8 @@ const Dashboard = () => {
 
     // Fetch dashboard stats (streak, etc)
     useEffect(() => {
+        if (!user) return;
+        
         const fetchStats = async () => {
             try {
                 const res = await api.get('/leads/stats/dashboard');
@@ -393,11 +395,13 @@ const Dashboard = () => {
                    setStreak(res.stats.user.streak || 0);
                 }
             } catch (error) {
-                console.error("Error fetching dashboard stats", error);
+                console.warn("Could not fetch dashboard stats:", error);
+                // Can set a mock streak here if desired for demo purposes
+                // setStreak(5);
             }
         };
         fetchStats();
-    }, []);
+    }, [user]);
     
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col justify-between overflow-x-hidden bg-background-light dark:bg-background-dark">
