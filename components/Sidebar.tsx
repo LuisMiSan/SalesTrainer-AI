@@ -24,7 +24,7 @@ export const Sidebar: React.FC = () => {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white">
                     <Icon name="school" size={20} />
                 </div>
-                <h1 className="text-xl font-bold text-text">PerfectCall</h1>
+                <h1 className="text-xl font-bold text-text">SalesTrainer AI</h1>
             </div>
 
             <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-4 no-scrollbar">

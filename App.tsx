@@ -78,7 +78,7 @@ const LoginPage = () => {
                     <div className="w-20 h-20 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6 transform -rotate-3">
                         <Icon name="school" className="text-primary" size={40} />
                     </div>
-                    <h1 className="text-3xl font-bold text-text mb-2">PerfectCall AI</h1>
+                    <h1 className="text-3xl font-bold text-text mb-2">SalesTrainer AI</h1>
                     <p className="text-subtle">Entrena tus habilidades de ventas.</p>
                 </div>
                 <div className="space-y-4 bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
@@ -88,7 +88,7 @@ const LoginPage = () => {
                         <span>Iniciar Sesión</span>
                     </button>
                     <div className="mt-4 p-3 bg-blue-50 rounded-lg text-center">
-                        <p className="text-sm text-blue-800">Demo: demo@perfectcall.com / demo123</p>
+                        <p className="text-sm text-blue-800">Demo: demo@salestrainer.ai / demo123</p>
                     </div>
                 </div>
             </div>
@@ -307,10 +307,10 @@ const SettingsHelp = () => {
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                     <h3 className="font-bold text-gray-900 mb-2">Contactar Soporte</h3>
                     <p className="text-sm text-subtle mb-3">¿Tienes un problema? Escríbenos.</p>
-                    <a href="mailto:soporte@perfectcall.ai" className="text-primary font-bold text-sm">soporte@perfectcall.ai</a>
+                    <a href="mailto:soporte@salestrainer.ai" className="text-primary font-bold text-sm">soporte@salestrainer.ai</a>
                 </div>
                 <div className="text-center pt-8 text-xs text-gray-400">
-                    <p>PerfectCall AI v1.0.0</p>
+                    <p>SalesTrainer AI v1.0.0</p>
                     <p>Hecho con ❤️ para vendedores</p>
                 </div>
             </div>

@@ -185,18 +185,18 @@ async function seedDatabase() {
     console.log(`✅ ${systemObjections.length} objeciones insertadas`);
 
     // Crear usuario demo (opcional)
-    const existingUser = await User.findOne({ email: 'demo@perfectcall.com' });
+    const existingUser = await User.findOne({ email: 'demo@salestrainer.ai' });
     if (!existingUser) {
       const demoUser = new User({
         name: 'Usuario Demo',
-        email: 'demo@perfectcall.com',
+        email: 'demo@salestrainer.ai',
         password: 'demo123456',
-        company: 'PerfectCall Demo',
+        company: 'SalesTrainer Demo',
         role: 'user'
       });
       await demoUser.save();
       console.log('✅ Usuario demo creado:');
-      console.log('   Email: demo@perfectcall.com');
+      console.log('   Email: demo@salestrainer.ai');
       console.log('   Password: demo123456');
     } else {
       console.log('ℹ️  Usuario demo ya existe');
@@ -204,7 +204,7 @@ async function seedDatabase() {
 
     console.log('\n🎉 ¡Base de datos inicializada exitosamente!');
     console.log('\nPuedes iniciar sesión con:');
-    console.log('Email: demo@perfectcall.com');
+    console.log('Email: demo@salestrainer.ai');
     console.log('Password: demo123456');
 
   } catch (error) {
